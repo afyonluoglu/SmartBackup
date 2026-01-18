@@ -1,0 +1,842 @@
+"""
+Smart Backup - History Window
+Tarih: 19 Kasım 2025
+Yazar: Dr. Mustafa Afyonluoğlu
+
+Gerekli Kütüphaneler:
+    - customtkinter (pip install customtkinter)
+    - tkinter (standart kütüphane)
+"""
+
+import customtkinter as ctk
+from tkinter import ttk, Menu
+from typing import List, Dict
+from datetime import datetime
+from sm_database import DatabaseManager
+from sm_backup_engine import BackupEngine
+from sm_ui_components import ConfirmDialog
+
+
+class HistoryWindow(ctk.CTkToplevel):
+    """Yedekleme geçmişi penceresi"""
+    
+    def __init__(self, parent, db_manager: DatabaseManager):
+        super().__init__(parent)
+        
+        self.db = db_manager
+        self.title("Yedekleme Geçmişi")
+        self.geometry("1200x800+100+10")
+        # self._center_window()
+        
+        # Ana pencerenin üzerinde görünmesini sağla
+        self.transient(parent)
+        self.lift()
+        self.focus_force()
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        self._create_widgets()
+        self._load_history()
+    
+    def _center_window(self):
+        """Pencereyi ekranda ortala"""
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        # Ana frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Başlık
+        title_label = ctk.CTkLabel(main_frame, text="Yedekleme Geçmişi",
+                                   font=("", 18, "bold"))
+        title_label.pack(pady=(0, 15))
+        
+        # Treeview için frame
+        tree_frame = ctk.CTkFrame(main_frame)
+        tree_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        # Scrollbar'lar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical")
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Treeview
+        columns = ("Proje", "Tarih", "Analiz Süresi", "Yedekleme Süresi", "Kopyalanan", "Arşivlenen", 
+                   "Atlanan", "Silinen", "Hariç Tutulan", "Toplam Boyut", "Kopyalanan Boyut", "Arşiv Boyut", 
+                    "Atlanan Boyut", "Silinen Boyut", "Hariç Tutulan Boyut", "Durum", "_id")  # _id gizli kolon
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show="headings",
+                                 yscrollcommand=vsb.set, xscrollcommand=hsb.set,
+                                 displaycolumns=("Proje", "Tarih", "Analiz Süresi", "Yedekleme Süresi", "Kopyalanan", "Arşivlenen", 
+                                                "Atlanan", "Silinen", "Hariç Tutulan", "Toplam Boyut", "Kopyalanan Boyut", "Arşiv Boyut", 
+                                                "Atlanan Boyut", "Silinen Boyut", "Hariç Tutulan Boyut", "Durum"))  # _id gösterilmez
+        
+        # Sütün başlıkları
+        self.tree.heading("Proje", text="Proje")
+        self.tree.heading("Tarih", text="Tarih")
+        self.tree.heading("Analiz Süresi", text="Analiz (sn)")
+        self.tree.heading("Yedekleme Süresi", text="Yedekleme (sn)")
+        self.tree.heading("Kopyalanan", text="Kopyalanan")
+        self.tree.heading("Arşivlenen", text="Arşivlenen")
+        self.tree.heading("Atlanan", text="Atlanan")
+        self.tree.heading("Silinen", text="Silinen")
+        self.tree.heading("Hariç Tutulan", text="Hariç Tutulan")
+        self.tree.heading("Toplam Boyut", text="Toplam Boyut")
+        self.tree.heading("Kopyalanan Boyut", text="Kopyalanan Boyut")
+        self.tree.heading("Arşiv Boyut", text="Arşiv Boyut")
+        self.tree.heading("Atlanan Boyut", text="Atlanan Boyut")
+        self.tree.heading("Silinen Boyut", text="Silinen Boyut")
+        self.tree.heading("Hariç Tutulan Boyut", text="Hariç Tutulan Boyut")
+        self.tree.heading("Durum", text="Durum")
+        
+        # Sütün genişlikleri
+        self.tree.column("Proje", width=170, stretch=False)
+        self.tree.column("Tarih", width=220, stretch=False)
+        self.tree.column("Analiz Süresi", width=140, anchor="center", stretch=False)
+        self.tree.column("Yedekleme Süresi", width=180, anchor="center", stretch=False)
+        self.tree.column("Kopyalanan", width=145, anchor="center", stretch=False)
+        self.tree.column("Arşivlenen", width=145, anchor="center", stretch=False)
+        self.tree.column("Atlanan", width=140, anchor="center", stretch=False)
+        self.tree.column("Silinen", width=140, anchor="center", stretch=False)
+        self.tree.column("Hariç Tutulan", width=140, anchor="center", stretch=False)
+        self.tree.column("Toplam Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Kopyalanan Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Arşiv Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Atlanan Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Silinen Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Hariç Tutulan Boyut", width=220, anchor="center", stretch=False)
+        self.tree.column("Durum", width=150, anchor="center", stretch=False)
+        self.tree.column("_id", width=0, stretch=False)  # Gizli kolon
+        
+        # Scrollbar yapılandırması
+        vsb.config(command=self.tree.yview)
+        hsb.config(command=self.tree.xview)
+        
+        # Grid yerleşimi
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Çift tıklama ile detay göster
+        self.tree.bind('<Double-Button-1>', lambda e: self._show_details())
+        
+        # Sağ tık context menü oluştur
+        self._create_context_menu()
+        self.tree.bind('<Button-3>', self._show_context_menu)
+        
+        # Butonlar
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+        
+        ctk.CTkButton(button_frame, text="Detayları Göster",
+                     command=self._show_details, width=130).pack(side="left", padx=(0, 5))
+        ctk.CTkButton(button_frame, text="Seçili Kaydı Sil",
+                     command=self._delete_selected, width=130,
+                     fg_color="red", hover_color="darkred").pack(side="left")
+        
+        ctk.CTkButton(button_frame, text="Kapat", command=self.destroy,
+                     width=100).pack(side="right")
+    
+    def _load_history(self):
+        """Geçmişi yükle"""
+        # Mevcut verileri temizle
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        # Veritabanından geçmişi al
+        history = self.db.get_all_backup_history()
+        
+        for record in history:
+            total_size = (record['total_size_copied'] + 
+                         record['total_size_moved'] + 
+                         record['total_size_skipped'] +
+                         record.get('total_size_deleted', 0) +
+                         record.get('total_size_excluded', 0))
+            
+            # DEBUG: Geçmiş tablosundaki değerleri kontrol et
+            # print(f"DEBUG Geçmiş: id={record['id']}")
+            # print(f"  size_copied: {record['total_size_copied']}")
+            # print(f"  size_moved: {record['total_size_moved']}")
+            # print(f"  size_skipped: {record['total_size_skipped']}")
+            # print(f"  size_deleted: {record.get('total_size_deleted', 0)}")
+            # print(f"  size_excluded: {record.get('total_size_excluded', 0)}")
+            # print(f"  TOPLAM: {total_size} ({BackupEngine.format_size(total_size)})")
+            
+            # Analiz süresini al (eski kayıtlar için 0 olabilir)
+            analysis_duration = record.get('analysis_duration_seconds', 0)
+            
+            # Tarihi formatla: YYYY-MM-DD HH:MM:SS -> DD-MM-YYYY HH:MM:SS
+            backup_date = record['backup_date']
+            try:
+                from datetime import datetime
+                dt = datetime.strptime(backup_date, '%Y-%m-%d %H:%M:%S')
+                formatted_date = dt.strftime('%d-%m-%Y %H:%M:%S')
+            except:
+                formatted_date = backup_date  # Hata durumunda orijinali kullan
+            
+            self.tree.insert("", "end", values=(
+                record['project_name'],
+                formatted_date,
+                f"{analysis_duration:.1f}",
+                f"{record['duration_seconds']:.1f}",
+                f"{record['total_files_copied']:,}",
+                f"{record['total_files_moved_to_revisions']:,}",
+                f"{record['total_files_skipped']:,}",
+                f"{record.get('total_files_deleted_to_revisions', 0):,}",
+                f"{record.get('total_files_excluded', 0):,}",
+                BackupEngine.format_size(total_size),
+                BackupEngine.format_size(record['total_size_copied']),
+                BackupEngine.format_size(record['total_size_moved']),
+                BackupEngine.format_size(record.get('total_size_skipped', 0)),
+                BackupEngine.format_size(record.get('total_size_deleted', 0)),
+                BackupEngine.format_size(record.get('total_size_excluded', 0)),
+                record['status'],
+                record['id']  # Gizli kolon - detay gösterme için gerekli
+            ))
+    
+    def _show_details(self):
+        """Seçili kaydın detaylarını göster"""
+        selection = self.tree.selection()
+        if not selection:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir kayıt seçin!")
+            return
+        
+        item = self.tree.item(selection[0])
+        backup_id = item['values'][-1]  # Son kolon (_id) backup_id'yi içerir
+        
+        # Detay penceresi aç
+        DetailWindow(self, self.db, backup_id)
+    
+    def _delete_selected(self):
+        """Seçili kayıtları sil (çoklu seçim destekler)"""
+        selection = self.tree.selection()
+        if not selection:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen en az bir kayıt seçin!")
+            return
+        
+        # Seçili kayıt sayısını al
+        count = len(selection)
+        
+        # Onay mesajını oluştur
+        if count == 1:
+            item = self.tree.item(selection[0])
+            project_name = item['values'][0]  # Proje artık ilk kolon
+            backup_date = item['values'][1]   # Tarih ikinci kolon
+            confirm_msg = f"'{project_name}' projesinin {backup_date} tarihli yedekleme kaydını silmek istediğinizden emin misiniz?"
+        else:
+            confirm_msg = f"{count} adet yedekleme kaydını silmek istediğinizden emin misiniz?"
+        
+        # Onay al
+        if not ConfirmDialog.ask(self, "Onay", confirm_msg):
+            return
+        
+        # Tüm seçili kayıtları sil
+        for item_id in selection:
+            item = self.tree.item(item_id)
+            backup_id = item['values'][-1]  # Son kolon (_id) backup_id'yi içerir
+            self.db.delete_backup_history(backup_id)
+        
+        # Listeyi yenile
+        self._load_history()
+        
+        if count == 1:
+            ConfirmDialog.show_info(self, "Başarılı", "Kayıt başarıyla silindi.")
+        else:
+            ConfirmDialog.show_info(self, "Başarılı", f"{count} adet kayıt başarıyla silindi.")
+    
+    def _create_context_menu(self):
+        """Sağ tık context menüsü oluştur"""
+        list_font = ("Segoe UI", 11)
+        self.context_menu = Menu(self, tearoff=0,
+                                 background="#333333",
+                                 foreground="white",
+                                 activebackground="#1F6AA5",
+                                 activeforeground="white",
+                                 font=list_font)
+        
+        self.context_menu.add_command(label="📄 Kayıt Sayfası", command=self._show_record_page)
+        self.context_menu.add_command(label="📋 Detayları Göster", command=self._show_details)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="🗑️ Sil", command=self._delete_selected)
+
+        list_font = ("Segoe UI", 13) 
+        self.context_menu.config(font=list_font)   
+    
+    def _show_context_menu(self, event):
+        """Context menüyü göster"""
+        # Tıklanan satırı seç
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            try:
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.context_menu.grab_release()
+    
+    def _show_record_page(self):
+        """Seçili kaydın özet sayfasını göster"""
+        selection = self.tree.selection()
+        if not selection:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir kayıt seçin!")
+            return
+        
+        item = self.tree.item(selection[0])
+        backup_id = item['values'][-1]  # Son kolon (_id) backup_id'yi içerir
+        
+        # Kayıt sayfası penceresini aç
+        RecordPageWindow(self, self.db, backup_id)
+
+
+class RecordPageWindow(ctk.CTkToplevel):
+    """Yedekleme kaydı özet sayfası - Log ekranına benzer renkli görünüm"""
+    
+    # Renk sabitleri (log ekranındaki ile aynı)
+    COLORS = {
+        'header': "#00A0E9",       # Mavi çizgi
+        'main_title': "#024FD3",   # Koyu mavi ana başlık
+        'title': "#9ED9FA",        # Açık mavi başlık
+        'label': "#FFAE35",        # Turuncu etiket
+        'value_green': "#01F001",  # Yeşil (yedeklenen)
+        'value_yellow': "#FFCC6C", # Sarı (atlanan)
+        'value_orange': "#FFA500", # Turuncu (hariç tutulan)
+        'value_red': "#FF6B6B",    # Kırmızı (silinen)
+        'value_purple': "#D896FF", # Mor (arşivlenen)
+        'info': "#60C2FF",         # Açık mavi (bilgi)
+        'gray': "#ADADAD",         # Gri (detay)
+        'white': "#FFFFFF",        # Beyaz
+        'success': "#65FE65",      # Açık yeşil (başarılı)
+    }
+    
+    def __init__(self, parent, db_manager: DatabaseManager, backup_id: int):
+        super().__init__(parent)
+        
+        self.db = db_manager
+        self.backup_id = backup_id
+        
+        self.title("Kayıt Sayfası")
+        self.geometry("750x700+150+50")
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        # Ana pencerenin üzerinde görünmesini sağla
+        self.transient(parent)
+        self.lift()
+        self.focus_force()
+        
+        self._create_widgets()
+        self._load_record()
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        # Ana frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        
+        # Başlık
+        title_label = ctk.CTkLabel(main_frame, text="📋 YEDEKLEME KAYIT SAYFASI",
+                                   font=("Segoe UI", 18, "bold"),
+                                   text_color=self.COLORS['main_title'])
+        title_label.pack(pady=(0, 10))
+        
+        # Metin alanı (log görünümü)
+        self.text_box = ctk.CTkTextbox(main_frame, 
+                                        font=("Consolas", 12),
+                                        wrap="word",
+                                        fg_color="#000000"                                        
+                                        )
+        self.text_box.pack(fill="both", expand=True, pady=(0, 10))
+        
+        # Alt butonlar
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+        
+        ctk.CTkButton(button_frame, text="Detayları Göster",
+                     command=self._show_details, width=130).pack(side="left", padx=(0, 5))
+        
+        ctk.CTkButton(button_frame, text="Kapat (ESC)", 
+                     command=self.destroy,
+                     width=100).pack(side="right")
+    
+    def _write_line(self, text: str, color: str = None):
+        """Metin alanına satır yaz"""
+        if color:
+            tag_name = f"color_{color.replace('#', '')}"
+            self.text_box.tag_config(tag_name, foreground=color)
+            self.text_box.insert("end", text + "\n", tag_name)
+        else:
+            self.text_box.insert("end", text + "\n")
+    
+    def _write_separator(self):
+        """Ayırıcı çizgi yaz"""
+        self._write_line("═" * 70, self.COLORS['header'])
+    
+    def _write_item(self, label: str, value: str, label_color: str = None, value_color: str = None):
+        """Etiket-değer çifti yaz"""
+        label_col = label_color or self.COLORS['label']
+        label_col = "#B0E7FF"
+
+        value_col = value_color or self.COLORS['white']
+        
+        # Etiket
+        tag_label = f"color_{label_col.replace('#', '')}"
+        self.text_box.tag_config(tag_label, foreground=label_col)
+        self.text_box.insert("end", f"  → {label}: ", tag_label)
+        
+        # Değer
+        tag_value = f"color_{value_col.replace('#', '')}"
+        self.text_box.tag_config(tag_value, foreground=value_col)
+        self.text_box.insert("end", value + "\n", tag_value)
+    
+    def _load_record(self):
+        """Kayıt bilgilerini yükle ve göster"""
+        # Backup history kaydını al
+        history_records = self.db.get_all_backup_history()
+        record = None
+        for r in history_records:
+            if r['id'] == self.backup_id:
+                record = r
+                break
+        
+        if not record:
+            self._write_line("Kayıt bulunamadı!", self.COLORS['value_red'])
+            return
+        
+        # Tarihi formatla
+        backup_date = record['backup_date']
+        try:
+            dt = datetime.strptime(backup_date, '%Y-%m-%d %H:%M:%S')
+            formatted_date = dt.strftime('%d %B %Y, %H:%M:%S')
+            day_name = dt.strftime('%A')
+            # Türkçe gün ve ay isimleri
+            day_names = {'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba',
+                        'Thursday': 'Perşembe', 'Friday': 'Cuma', 'Saturday': 'Cumartesi', 'Sunday': 'Pazar'}
+            month_names = {'January': 'Ocak', 'February': 'Şubat', 'March': 'Mart', 'April': 'Nisan',
+                          'May': 'Mayıs', 'June': 'Haziran', 'July': 'Temmuz', 'August': 'Ağustos',
+                          'September': 'Eylül', 'October': 'Ekim', 'November': 'Kasım', 'December': 'Aralık'}
+            
+            for eng, tr in month_names.items():
+                formatted_date = formatted_date.replace(eng, tr)
+            day_name = day_names.get(day_name, day_name)
+        except:
+            formatted_date = backup_date
+            day_name = ""
+        
+        # Hesaplamalar
+        total_size = (record['total_size_copied'] + 
+                     record['total_size_moved'] + 
+                     record['total_size_skipped'] +
+                     record.get('total_size_deleted', 0) +
+                     record.get('total_size_excluded', 0))
+        
+        total_files = (record['total_files_copied'] + 
+                      record['total_files_moved_to_revisions'] + 
+                      record['total_files_skipped'] +
+                      record.get('total_files_deleted_to_revisions', 0) +
+                      record.get('total_files_excluded', 0))
+        
+        analysis_duration = record.get('analysis_duration_seconds', 0)
+        backup_duration = record['duration_seconds']
+        total_duration = analysis_duration + backup_duration
+        
+        # ============ BAŞLIK ============
+        self._write_separator()
+        self._write_line(f"  {record['project_name'].upper()} - YEDEKLEME RAPORU", self.COLORS['title'])
+        self._write_separator()
+        
+        # ============ GENEL BİLGİLER ============
+        self._write_line("\n📅 GENEL BİLGİLER", self.COLORS['info'])
+        self._write_line("─" * 50, self.COLORS['gray'])
+        
+        self._write_item("Proje Adı", record['project_name'], value_color=self.COLORS['white'])
+        self._write_item("Tarih", f"{formatted_date} ({day_name})", value_color=self.COLORS['white'])
+        
+        status_color = self.COLORS['success'] if record['status'] == 'Tamamlandı' else self.COLORS['value_red']
+        # print(f"DEBUG: Kayıt durumu = {record['status']}, renk = {status_color}")
+        status_text = "✓ Tamamlandı" if record['status'] == 'Tamamlandı' else f"✗ {record['status']}"
+        self._write_item("Durum", status_text, value_color=status_color)
+        
+        # ============ SÜRE BİLGİLERİ ============
+        self._write_line("\n⏱️ SÜRE BİLGİLERİ", self.COLORS['info'])
+        self._write_line("─" * 50, self.COLORS['gray'])
+        
+        self._write_item("Analiz Süresi", f"{analysis_duration:.1f} saniye", value_color=self.COLORS['gray'])
+        self._write_item("Yedekleme Süresi", f"{backup_duration:.1f} saniye", value_color=self.COLORS['gray'])
+        self._write_item("Toplam Süre", f"{total_duration:.1f} saniye ({total_duration/60:.1f} dakika)", value_color=self.COLORS['white'])
+        
+        # ============ DOSYA İSTATİSTİKLERİ ============
+        self._write_line("\n📊 DOSYA İSTATİSTİKLERİ", self.COLORS['info'])
+        self._write_line("─" * 50, self.COLORS['gray'])
+        
+        self._write_item("Toplam İncelenen Dosya", f"{total_files:,} adet ({BackupEngine.format_size(total_size)})", 
+                        value_color=self.COLORS['info'])
+        
+        # Yedeklenen dosyalar
+        if record['total_files_copied'] > 0:
+            self._write_item("Yedeklenen Dosya", 
+                           f"{record['total_files_copied']:,} adet ({BackupEngine.format_size(record['total_size_copied'])})",
+                           value_color=self.COLORS['value_green'])
+        
+        # Atlanan dosyalar (güncel)
+        if record['total_files_skipped'] > 0:
+            self._write_item("Atlanan Dosya (güncel)", 
+                           f"{record['total_files_skipped']:,} adet ({BackupEngine.format_size(record.get('total_size_skipped', 0))})",
+                           value_color=self.COLORS['value_yellow'])
+        
+        # Hariç tutulan dosyalar
+        excluded_files = record.get('total_files_excluded', 0)
+        if excluded_files > 0:
+            self._write_item("Hariç Tutulan (filtre)", 
+                           f"{excluded_files:,} adet ({BackupEngine.format_size(record.get('total_size_excluded', 0))})",
+                           value_color=self.COLORS['value_orange'])
+        
+        # Arşivlenen dosyalar (_REVISIONS)
+        if record['total_files_moved_to_revisions'] > 0:
+            self._write_item("Arşivlenen (_REVISIONS)", 
+                           f"{record['total_files_moved_to_revisions']:,} adet ({BackupEngine.format_size(record['total_size_moved'])})",
+                           value_color=self.COLORS['value_purple'])
+        
+        # Silinen dosyalar (kaynakta yok)
+        deleted_files = record.get('total_files_deleted_to_revisions', 0)
+        if deleted_files > 0:
+            self._write_item("Silinen (kaynakta yok)", 
+                           f"{deleted_files:,} adet ({BackupEngine.format_size(record.get('total_size_deleted', 0))})",
+                           value_color=self.COLORS['value_red'])
+        
+        # ============ ÖZET ============
+        self._write_line("\n" + "═" * 70, self.COLORS['header'])
+        self._write_line("  📋 ÖZET", self.COLORS['title'])
+        self._write_separator()
+        
+        # Özet satırları
+        summary_lines = []
+        if record['total_files_copied'] > 0:
+            summary_lines.append(f"• Yedeklenen: {record['total_files_copied']:,} dosya ({BackupEngine.format_size(record['total_size_copied'])})")
+        if record['total_files_skipped'] > 0:
+            summary_lines.append(f"• Atlanan: {record['total_files_skipped']:,} dosya")
+        if excluded_files > 0:
+            summary_lines.append(f"• Hariç Tutulan: {excluded_files:,} dosya")
+        if record['total_files_moved_to_revisions'] > 0:
+            summary_lines.append(f"• Arşivlenen: {record['total_files_moved_to_revisions']:,} dosya")
+        if deleted_files > 0:
+            summary_lines.append(f"• Silinen: {deleted_files:,} dosya")
+        
+        for line in summary_lines:
+            self._write_line("  " + line, self.COLORS['gray'])
+        
+        self._write_line("", None)
+        self._write_line(f"  ⏱️ İşlem Süresi: {total_duration:.1f} saniye", self.COLORS['gray'])
+        self._write_separator()
+        
+        # ============ EK BİLGİLER ============
+        # Dosya detayları var mı kontrol et
+        has_file_details = self.db.has_backup_file_details(self.backup_id)
+        
+        self._write_line("\n💡 EK BİLGİLER", self.COLORS['info'])
+        self._write_line("─" * 50, self.COLORS['gray'])
+        
+        if has_file_details:
+            file_details = self.db.get_backup_file_details(self.backup_id)
+            self._write_line(f"  • Dosya detay kaydı: {len(file_details)} adet dosya", self.COLORS['gray'])
+        else:
+            self._write_line("  • Dosya detay kaydı: Mevcut değil", self.COLORS['gray'])
+        
+        # Backup detayları (mapping bazlı)
+        backup_details = self.db.get_backup_details(self.backup_id)
+        if backup_details:
+            self._write_line(f"  • Eşleşme sayısı: {len(backup_details)} adet", self.COLORS['gray'])
+        
+        # Pencere başlığını güncelle
+        self.title(f"Kayıt Sayfası - {record['project_name']}")
+        
+        # Scroll'u en başa al
+        self.text_box.see("1.0")
+        
+        # Metin alanını salt okunur yap
+        self.text_box.configure(state="disabled")
+    
+    def _show_details(self):
+        """Detay penceresini aç"""
+        DetailWindow(self, self.db, self.backup_id)
+
+
+class DetailWindow(ctk.CTkToplevel):
+    """Yedekleme detay penceresi"""
+    
+    def __init__(self, parent, db_manager: DatabaseManager, backup_id: int):
+        super().__init__(parent)
+        
+        self.db = db_manager
+        self.backup_id = backup_id
+        
+        self.title("Yedekleme Detayları")
+        self.geometry("1200x700+100+10")
+        # self._center_window()
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        # Renk paleti - farklı eşleşme grupları için
+        self.bg_colors = [
+            '#2b3e50',  # Koyu mavi-gri
+            "#2c4b6b",  # Koyu gri
+            "#335F5B",  # Orta koyu gri
+            "#6b552e",  # Açık koyu gri
+            "#742F28",  # Alternatif koyu ton
+            "#234a46",  # Çok koyu ton
+        ]
+        
+        self._create_widgets()
+        self._load_details()
+    
+    def _setup_treeview_styles(self):
+        """Treeview için stilleri tanımla"""
+        style = ttk.Style()
+        
+        # Her eşleşme grubu için farklı tag'ler oluştur
+        for i, color in enumerate(self.bg_colors):
+            tag_name = f'match_group_{i}'
+            style.map('Treeview',
+                     background=[('selected', '#1f538d')],
+                     foreground=[('selected', 'white')])
+        
+        # "Daha yeni" için parlak yeşil renk
+        style.configure('newer.Treeview', foreground='#00ff00')
+        style.configure('new.Treeview', foreground="#00d5ff")
+    
+    def _center_window(self):
+        """Pencereyi ekranda ortala"""
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        # Ana frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Treeview stilleri için renk paleti tanımla
+        self._setup_treeview_styles()
+        
+        # Başlık - Eşleşme Detayları
+        title_label = ctk.CTkLabel(main_frame, text="Eşleşme Detayları",
+                                   font=("", 16, "bold"))
+        title_label.pack(pady=(0, 10))
+        
+        # Treeview için frame (Eşleşme detayları)
+        tree_frame = ctk.CTkFrame(main_frame)
+        tree_frame.pack(fill="x", pady=(0, 15))
+        
+        # Scrollbar'lar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical")
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Treeview
+        columns = ("Kaynak", "Hedef", "Kopyalanan", "Arşivlenen", 
+                   "Atlanan", "Silinen", "Hariç Tutulan", "Boyut")
+        self.tree = ttk.Treeview(tree_frame, columns=columns, show="headings",
+                                yscrollcommand=vsb.set, xscrollcommand=hsb.set,
+                                height=5)
+        
+        # Sütün başlıkları
+        self.tree.heading("Kaynak", text="Kaynak Klasör")
+        self.tree.heading("Hedef", text="Hedef Klasör")
+        self.tree.heading("Kopyalanan", text="Kopyalanan")
+        self.tree.heading("Arşivlenen", text="Arşivlenen")
+        self.tree.heading("Atlanan", text="Atlanan")
+        self.tree.heading("Silinen", text="Silinen")
+        self.tree.heading("Hariç Tutulan", text="Hariç Tutulan")
+        self.tree.heading("Boyut", text="Toplam Boyut")
+        
+        # Sütün genişlikleri
+        self.tree.column("Kaynak", width=250)
+        self.tree.column("Hedef", width=250)
+        self.tree.column("Kopyalanan", width=90, anchor="center")
+        self.tree.column("Arşivlenen", width=90, anchor="center")
+        self.tree.column("Atlanan", width=80, anchor="center")
+        self.tree.column("Silinen", width=80, anchor="center")
+        self.tree.column("Hariç Tutulan", width=140, anchor="center")
+        self.tree.column("Boyut", width=120, anchor="center")
+        
+        # Scrollbar yapılandırması
+        vsb.config(command=self.tree.yview)
+        hsb.config(command=self.tree.xview)
+        
+        # Grid yerleşimi
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Dosya Detayları başlık
+        self.file_details_label = ctk.CTkLabel(main_frame, text="Dosya Detayları",
+                                               font=("", 16, "bold"))
+        self.file_details_label.pack(pady=(10, 10))
+        
+        # Dosya Detayları için Treeview frame
+        file_tree_frame = ctk.CTkFrame(main_frame)
+        file_tree_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        # Scrollbar'lar
+        file_vsb = ttk.Scrollbar(file_tree_frame, orient="vertical")
+        file_hsb = ttk.Scrollbar(file_tree_frame, orient="horizontal")
+        
+        # Dosya Detayları Treeview
+        file_columns = ("Dizin", "Dosya Adı", "Boyut", "Önceki Boyut", "Yedekleme Sebebi")
+        self.file_tree = ttk.Treeview(file_tree_frame, columns=file_columns, 
+                                      show="headings",
+                                      yscrollcommand=file_vsb.set, 
+                                      xscrollcommand=file_hsb.set)
+        
+        # Sütün başlıkları
+        self.file_tree.heading("Dizin", text="Dosya Dizini")
+        self.file_tree.heading("Dosya Adı", text="Dosya Adı")
+        self.file_tree.heading("Boyut", text="Boyut")
+        self.file_tree.heading("Önceki Boyut", text="Önceki Boyut")
+        self.file_tree.heading("Yedekleme Sebebi", text="Yedekleme Sebebi")
+        
+        # Sütün genişlikleri
+        self.file_tree.column("Dizin", width=400)
+        self.file_tree.column("Dosya Adı", width=250)
+        self.file_tree.column("Boyut", width=100, anchor="center")
+        self.file_tree.column("Önceki Boyut", width=100, anchor="center")
+        self.file_tree.column("Yedekleme Sebebi", width=150, anchor="center")
+        
+        # Scrollbar yapılandırması
+        file_vsb.config(command=self.file_tree.yview)
+        file_hsb.config(command=self.file_tree.xview)
+        
+        # Grid yerleşimi
+        self.file_tree.grid(row=0, column=0, sticky="nsew")
+        file_vsb.grid(row=0, column=1, sticky="ns")
+        file_hsb.grid(row=1, column=0, sticky="ew")
+        
+        file_tree_frame.grid_rowconfigure(0, weight=1)
+        file_tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Kapat butonu
+        ctk.CTkButton(main_frame, text="Kapat", command=self.destroy,
+                     width=100).pack()
+    
+    def _load_details(self):
+        """Detayları yükle"""
+        # Eşleşme detaylarını yükle
+        details = self.db.get_backup_details(self.backup_id)
+        
+        for detail in details:
+            total_size = (detail['size_copied'] + 
+                         detail['size_moved'] + 
+                         detail['size_skipped'] +
+                         detail.get('size_deleted', 0) +
+                         detail.get('size_excluded', 0))
+            
+            # DEBUG: Detay penceresindeki değerleri kontrol et
+            # print(f"DEBUG Detay: mapping_id={detail['mapping_id']}")
+            # print(f"  size_copied: {detail['size_copied']}")
+            # print(f"  size_moved: {detail['size_moved']}")
+            # print(f"  size_skipped: {detail['size_skipped']}")
+            # print(f"  size_deleted: {detail.get('size_deleted', 0)}")
+            # print(f"  size_excluded: {detail.get('size_excluded', 0)}")
+            # print(f"  TOPLAM: {total_size} ({BackupEngine.format_size(total_size)})")
+            
+            self.tree.insert("", "end", values=(
+                detail['source_path'],
+                detail['target_path'],
+                detail['files_copied'],
+                detail['files_moved'],
+                detail['files_skipped'],
+                detail.get('files_deleted', 0),
+                detail.get('files_excluded', 0),
+                BackupEngine.format_size(total_size)
+            ))
+        
+        # Dosya detaylarını yükle
+        file_details = self.db.get_backup_file_details(self.backup_id)
+        
+        # DEBUG: Dosya detayları kontrolü
+        # print(f"\n========== DOSYA DETAYLARI DEBUG ==========")
+        # print(f"Backup ID: {self.backup_id}")
+        # print(f"Dönen kayıt sayısı: {len(file_details) if file_details else 0}")
+        # if file_details:
+        #     print(f"İlk kayıt örneği: {file_details[0]}")
+        #     print(f"Toplam kayıt: {len(file_details)}")
+        # else:
+        #     print("HİÇ KAYIT DÖNMÜYOR!")
+        #     # Veritabanında bu backup_id ile kayıt var mı kontrol et
+        #     has_details = self.db.has_backup_file_details(self.backup_id)
+        #     print(f"Veritabanında kayıt var mı? {has_details}")
+        # print(f"===========================================\n")
+        
+        if file_details:
+            self.file_details_label.configure(text=f"Dosya Detayları ({len(file_details)} dosya)")
+            
+            # mapping_id'ye göre grupla - her grup farklı renk alacak
+            mapping_groups = {}
+            for file_detail in file_details:
+                mapping_id = file_detail.get('mapping_id', 0)
+                if mapping_id not in mapping_groups:
+                    mapping_groups[mapping_id] = []
+                mapping_groups[mapping_id].append(file_detail)
+            
+            # print(f"DEBUG: Mapping grupları: {list(mapping_groups.keys())}")
+            # print(f"DEBUG: Grup sayısı: {len(mapping_groups)}")
+            
+            # Her mapping grubu için farklı renk ata
+            for group_index, (mapping_id, files) in enumerate(sorted(mapping_groups.items())):
+                color_index = group_index % len(self.bg_colors)
+                bg_color = self.bg_colors[color_index]
+                tag_name = f'match_group_{group_index}'
+                
+                # print(f"DEBUG: Grup {group_index} - mapping_id={mapping_id}, dosya sayısı={len(files)}, renk={bg_color}")
+                
+                # Bu grup için tag yapılandır
+                self.file_tree.tag_configure(tag_name, background=bg_color)
+                
+                # Dosyaları ekle
+                for file_detail in files:
+                    # Önceki boyutu formatla (varsa)
+                    previous_size = file_detail.get('previous_size')
+                    previous_size_str = BackupEngine.format_size(previous_size) if previous_size is not None else "-"
+                    
+                    backup_reason = file_detail['backup_reason']
+                    
+                    # Satırı ekle
+                    item_id = self.file_tree.insert("", "end", values=(
+                        file_detail['file_path'],
+                        file_detail['file_name'],
+                        BackupEngine.format_size(file_detail['file_size']),
+                        previous_size_str,
+                        backup_reason
+                    ), tags=(tag_name,))
+                    
+                    # "daha yeni" ise özel renklendirme yap
+                    if backup_reason.lower() == "daha yeni":
+                        # Parlak yeşil renk için özel tag ekle
+                        newer_tag = f'{tag_name}_newer'
+                        self.file_tree.tag_configure(newer_tag, background=bg_color, foreground='#00ff00')
+                        self.file_tree.item(item_id, tags=(newer_tag,))
+
+                    if backup_reason.lower() == "yeni dosya":
+                        new_tag = f'{tag_name}_new'
+                        self.file_tree.tag_configure(new_tag, background=bg_color, foreground="#ffea00")
+                        self.file_tree.item(item_id, tags=(new_tag,))
+
+
+            # print(f"DEBUG: Toplam {len(file_details)} dosya Treeview'e eklendi.\n")
+        else:
+            self.file_details_label.configure(text="Dosya Detayları (Kayıt yok)")

@@ -1,0 +1,41 @@
+# Log, test and some initial files
+*.log
+*.txt
+test*
+project plan-*
+
+# Settings and configuration files
+*.json
+*.db
+
+# URL files
+*.url
+
+# Compiled Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Executable files
+*.exe
+*.spec
+
+# Batch and Backup files 
+*.bat
+*.zip
+
+# Temporary dir, subdirs and its files 
+TEMP/
+**/TEMP/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
