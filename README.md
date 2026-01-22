@@ -128,7 +128,7 @@ Smart Backup, yedekleme detayları penceresinden herhangi bir dosyanın geçmiş
 ![Dosya Geçmişi](screenshots/10-file-history-detay.png)
 
 1. **Geçmiş** butonuna tıklayarak yedekleme geçmişi penceresini açın
-2. Bir yedekleme kaydına çift tıklayarak detay penceresini açın
+2. Bir yedekleme kaydına çift tıklayarak detay penceresini açın. (O anda erişilemeyen dosyaların satırları kırmızı renk ile işaretlenir. Bu bir USB disk ise USB cihazınızın bilgisayarınıza takılı olduğuna emin olun)
 3. "Dosya Detayları" tablosunda görüntülemek istediğiniz dosyaya **sağ tıklayın**
 4. Açılan menüden **"📜 Geçmişini Göster"** seçeneğini seçin
 
