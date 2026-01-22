@@ -207,18 +207,17 @@ Standart kütüphaneler (kurulum gerektirmez):
 
 ## Kurulum
 
-1. Tüm proje dosyalarını bir klasöre kopyalayın
-2. Gerekli kütüphaneyi yükleyin:
+1. Python'un bilgisayarınızda kurulu olduğu varsayılmıştır. Eğer yüklü değilse https://www.python.org/downloads/ adresinden indirin ve bilgisayarınıza kurun. 
+2. Tüm proje dosyalarını bir klasöre kopyalayın
+3. Gerekli kütüphaneyi yükleyin:
    ```bash
    pip install customtkinter
    ```
-3. Ana programı çalıştırın:
+4. Ana programı çalıştırın:
    ```bash
    python sm_main.py
    ```
    
-   Veya `start_smartbackup.bat` dosyasını çift tıklayın.
-
 ---
 
 ## Dosya Yapısı
