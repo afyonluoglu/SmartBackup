@@ -190,6 +190,8 @@ class BackupMixin:
             
             # Detaylı analiz yap
             # print(f"Gösterilecek dosya sayısı: {max_files_to_show}")
+
+            print(f"✨Analiz yapılıyor: {mapping['source_path']}")
             result = self.backup_engine.analyze_mapping_detailed(
                 mapping['source_path'],
                 mapping['file_filter'],
@@ -198,7 +200,12 @@ class BackupMixin:
                 mapping['target_path'],
                 max_files_to_show
             )
+            toplam_ncelenen_dosya = (len(result['files_to_backup']) + 
+                                    result.get('total_excluded_count', 0) + 
+                                    result['skipped_count'])
+            print(f"✅{toplam_ncelenen_dosya} dosya için Analiz tamamlandı: {mapping['source_path']}")
             
+
             files_to_backup = result['files_to_backup']
             user_excluded_count = result.get('user_excluded_count', 0)
             hidden_excluded_count = result.get('hidden_excluded_count', 0)
@@ -484,7 +491,7 @@ class BackupMixin:
 
         # Toplam dosya sayısı: yedeklenecek + atlanan + hariç tutulan
         grand_total = total_files + total_skipped + total_excluded
-        summary = f"Toplam dosya: {grand_total}  | Yedeklenecek: {total_files}  | Atlanan: {total_skipped} | Hariç tutulan: {total_excluded}  | Silinen: {total_deleted} | Arşivlenen: {total_revision_count}"
+        summary = f"Toplam dosya: {grand_total:,}  | Yedeklenecek: {total_files:,}  | Atlanan: {total_skipped:,} | Hariç tutulan: {total_excluded:,}  | Silinen: {total_deleted:,} | Arşivlenen: {total_revision_count:,}"
 
         self.stats_label.configure(text=summary)
 

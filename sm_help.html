@@ -830,6 +830,50 @@
                     <strong>İpucu:</strong> Geçmiş tablosunda bir kayda çift tıklayarak detaylarını görebilirsiniz.
                 </div>
             </div>
+            
+            <h3>📜 Dosya Geçmişi (Revision History)</h3>
+            <p>Yedekleme detayları penceresindeki "Dosya Detayları" tablosunda herhangi bir dosyaya sağ tıklayarak o dosyanın geçmiş versiyonlarını görüntüleyebilirsiniz.</p>
+            
+            <h4>Dosya Geçmişini Görüntüleme</h4>
+            <ol>
+                <li>"Geçmiş" butonuna tıklayarak yedekleme geçmişi penceresini açın</li>
+                <li>Bir yedekleme kaydına çift tıklayarak detay penceresini açın</li>
+                <li>"Dosya Detayları" tablosunda görüntülemek istediğiniz dosyaya sağ tıklayın</li>
+                <li>Açılan menüden <strong>"📜 Geçmişini Göster"</strong> seçeneğini seçin</li>
+            </ol>
+            
+            <h4>Dosya Geçmişi Penceresi</h4>
+            <p>Açılan pencerede seçilen dosyanın <code>_REVISIONS</code> klasöründeki tüm eski versiyonları listelenir:</p>
+            <ul>
+                <li><strong>Revision Tarihi:</strong> Dosyanın arşivlendiği tarih ve saat</li>
+                <li><strong>Dosya Boyutu:</strong> O anki dosya boyutu</li>
+                <li><strong>Dosya Konumu:</strong> Revision dosyasının tam yolu</li>
+            </ul>
+            
+            <h4>Revision Dosyasını Gösterme</h4>
+            <p>Geçmiş penceresinde bir revision'a sağ tıklayıp <strong>"📂 Göster"</strong> seçeneğini seçerek veya 
+            <strong>"Göster"</strong> butonuna tıklayarak dosyayı Windows Explorer'da seçili olarak açabilirsiniz.</p>
+            
+            <div class="example-box">
+                <h5>📌 Örnek Kullanım</h5>
+                <p>Diyelim ki <code>rapor.docx</code> dosyasının 3 gün önceki versiyonuna ihtiyacınız var:</p>
+                <ol>
+                    <li>Geçmiş penceresinden ilgili yedekleme kaydını bulun ve çift tıklayın</li>
+                    <li>Dosya Detayları tablosunda <code>rapor.docx</code> dosyasını bulun</li>
+                    <li>Sağ tıklayıp "Geçmişini Göster" seçin</li>
+                    <li>Açılan pencerede 3 gün önceki tarihi olan satırı bulun</li>
+                    <li>"Göster" butonuna tıklayın - dosya Explorer'da açılır</li>
+                    <li>Dosyayı kopyalayıp istediğiniz yere yapıştırabilirsiniz</li>
+                </ol>
+            </div>
+            
+            <div class="warning">
+                <span class="tip-icon">⚠️</span>
+                <div>
+                    <strong>Not:</strong> Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. 
+                    Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
+                </div>
+            </div>
         </section>
 
         <!-- Modül Yapısı -->

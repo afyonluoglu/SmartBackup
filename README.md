@@ -116,8 +116,51 @@ Her yedekleme sonrasında detaylı rapor:
 - Kart ve tablo görünümü seçenekleri
 - Detaylı istatistikler
 - Geçmiş kayıtlarını silme
+- **Dosya geçmişi görüntüleme** (revision history)
 
 ![Geçmiş Detayları](screenshots/09-history-detay.png)
+
+### 📜 Dosya Geçmişi (Revision History)
+
+Smart Backup, yedekleme detayları penceresinden herhangi bir dosyanın geçmiş versiyonlarını görüntüleme imkanı sunar.
+
+#### Dosya Geçmişini Görüntüleme
+
+1. **Geçmiş** butonuna tıklayarak yedekleme geçmişi penceresini açın
+2. Bir yedekleme kaydına çift tıklayarak detay penceresini açın
+3. "Dosya Detayları" tablosunda görüntülemek istediğiniz dosyaya **sağ tıklayın**
+4. Açılan menüden **"📜 Geçmişini Göster"** seçeneğini seçin
+
+#### Dosya Geçmişi Penceresi
+
+Açılan pencerede seçilen dosyanın `_REVISIONS` klasöründeki tüm eski versiyonları listelenir:
+
+| Sütun | Açıklama |
+|-------|----------|
+| Revision Tarihi | Dosyanın arşivlendiği tarih ve saat |
+| Dosya Boyutu | O anki dosya boyutu |
+| Dosya Konumu | Revision dosyasının tam yolu |
+
+#### Revision Dosyasını Açma
+
+- Tabloda bir satıra **sağ tıklayıp "📂 Göster"** seçin, veya
+- Satırı seçip **"Göster"** butonuna tıklayın
+- Dosya Windows Explorer'da seçili olarak açılır
+
+#### Örnek Kullanım Senaryosu
+
+Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız var:
+
+```
+1. Geçmiş penceresinden ilgili yedekleme kaydını bulun → çift tıklayın
+2. Dosya Detayları tablosunda "rapor.docx" dosyasını bulun
+3. Sağ tıklayıp "Geçmişini Göster" seçin
+4. Açılan pencerede 3 gün önceki tarihi olan satırı bulun
+5. "Göster" butonuna tıklayın → dosya Explorer'da açılır
+6. Dosyayı kopyalayıp istediğiniz yere yapıştırabilirsiniz
+```
+
+> **Not:** Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
 
 ### 🎨 Kullanıcı Arayüzü
 

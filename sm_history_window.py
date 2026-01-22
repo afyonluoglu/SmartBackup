@@ -12,6 +12,8 @@ import customtkinter as ctk
 from tkinter import ttk, Menu
 from typing import List, Dict
 from datetime import datetime
+import os
+import subprocess
 from sm_database import DatabaseManager
 from sm_backup_engine import BackupEngine
 from sm_ui_components import ConfirmDialog
@@ -729,6 +731,10 @@ class DetailWindow(ctk.CTkToplevel):
         file_tree_frame.grid_rowconfigure(0, weight=1)
         file_tree_frame.grid_columnconfigure(0, weight=1)
         
+        # Dosya tablosu için context menü oluştur
+        self._create_file_context_menu()
+        self.file_tree.bind('<Button-3>', self._show_file_context_menu)
+        
         # Kapat butonu
         ctk.CTkButton(main_frame, text="Kapat", command=self.destroy,
                      width=100).pack()
@@ -836,7 +842,308 @@ class DetailWindow(ctk.CTkToplevel):
                         self.file_tree.tag_configure(new_tag, background=bg_color, foreground="#ffea00")
                         self.file_tree.item(item_id, tags=(new_tag,))
 
+            # Dosya detaylarını sakla (context menü için)
+            self.file_details_data = file_details
 
             # print(f"DEBUG: Toplam {len(file_details)} dosya Treeview'e eklendi.\n")
         else:
+            self.file_details_data = []
             self.file_details_label.configure(text="Dosya Detayları (Kayıt yok)")
+    
+    def _create_file_context_menu(self):
+        """Dosya tablosu için context menü oluştur"""
+        list_font = ("Segoe UI", 13)
+        self.file_context_menu = Menu(self, tearoff=0,
+                                      background="#333333",
+                                      foreground="white",
+                                      activebackground="#1F6AA5",
+                                      activeforeground="white",
+                                      font=list_font)
+        
+        self.file_context_menu.add_command(label="📜 Geçmişini Göster", command=self._show_file_history)
+        self.file_context_menu.add_separator()
+        self.file_context_menu.add_command(label="📂 Dosya Konumunu Aç", command=self._open_file_location)
+    
+    def _show_file_context_menu(self, event):
+        """Dosya tablosu context menüsünü göster"""
+        # Tıklanan satırı seç
+        item = self.file_tree.identify_row(event.y)
+        if item:
+            self.file_tree.selection_set(item)
+            try:
+                self.file_context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.file_context_menu.grab_release()
+    
+    def _get_selected_file_data(self):
+        """Seçili dosyanın verilerini al"""
+        selection = self.file_tree.selection()
+        if not selection:
+            return None
+        
+        item = self.file_tree.item(selection[0])
+        values = item['values']
+        
+        # file_path (dizin) ve file_name değerlerini al
+        file_path = values[0]
+        file_name = values[1]
+        
+        # file_details_data içinden eşleşen kaydı bul
+        if hasattr(self, 'file_details_data'):
+            for detail in self.file_details_data:
+                if detail['file_path'] == file_path and detail['file_name'] == file_name:
+                    return detail
+        
+        # Eğer detay bulunamazsa basit bir dict döndür
+        return {
+            'file_path': file_path,
+            'file_name': file_name
+        }
+    
+    def _show_file_history(self):
+        """Seçili dosyanın revision geçmişini göster"""
+        file_data = self._get_selected_file_data()
+        if not file_data:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        # Backup details'dan hedef klasörü al
+        details = self.db.get_backup_details(self.backup_id)
+        if not details:
+            ConfirmDialog.show_warning(self, "Uyarı", "Hedef klasör bilgisi bulunamadı!")
+            return
+        
+        # mapping_id'ye göre hedef klasörü bul
+        target_path = None
+        mapping_id = file_data.get('mapping_id')
+        
+        if mapping_id:
+            for detail in details:
+                if detail['mapping_id'] == mapping_id:
+                    target_path = detail['target_path']
+                    break
+        
+        # Eğer mapping_id yoksa veya bulunamazsa, ilk detayı kullan
+        if not target_path and details:
+            target_path = details[0]['target_path']
+        
+        if not target_path:
+            ConfirmDialog.show_warning(self, "Uyarı", "Hedef klasör bilgisi bulunamadı!")
+            return
+        
+        # FileHistoryWindow aç
+        FileHistoryWindow(self, self.db, file_data['file_path'], file_data['file_name'], target_path)
+    
+    def _open_file_location(self):
+        """Seçili dosyanın konumunu Windows Explorer'da aç"""
+        file_data = self._get_selected_file_data()
+        if not file_data:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        # Tam dosya yolunu oluştur
+        full_path = os.path.join(file_data['file_path'], file_data['file_name'])
+        
+        if os.path.exists(full_path):
+            # Windows Explorer'da dosyayı seçili olarak aç
+            subprocess.run(['explorer', '/select,', os.path.normpath(full_path)])
+        else:
+            ConfirmDialog.show_warning(self, "Uyarı", f"Dosya bulunamadı:\n{full_path}")
+
+
+class FileHistoryWindow(ctk.CTkToplevel):
+    """Dosya revision geçmişi penceresi"""
+    
+    def __init__(self, parent, db_manager: DatabaseManager, file_path: str, file_name: str, target_path: str):
+        super().__init__(parent)
+        
+        self.db = db_manager
+        self.file_path = file_path
+        self.file_name = file_name
+        self.target_path = target_path
+        
+        self.title(f"Dosya Geçmişi - {file_name}")
+        self.geometry("1200x750+150+100")
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        # Ana pencerenin üzerinde görünmesini sağla
+        self.transient(parent)
+        self.lift()
+        self.focus_force()
+        
+        self._create_widgets()
+        self._load_file_history()
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        # Ana frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Başlık
+        title_label = ctk.CTkLabel(main_frame, text=f"📜 {self.file_name} - Revision Geçmişi",
+                                   font=("", 16, "bold"))
+        title_label.pack(pady=(0, 5))
+        
+        # Dosya yolu bilgisi
+        path_label = ctk.CTkLabel(main_frame, text=f"Dizin: {self.file_path}",
+                                  font=("", 11), text_color="gray")
+        path_label.pack(pady=(0, 15))
+        
+        # Treeview frame
+        tree_frame = ctk.CTkFrame(main_frame, height = 400)
+        tree_frame.pack(fill="x", expand=False, pady=(0, 15))
+        tree_frame.pack_propagate(False)
+        
+        # Scrollbar'lar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical")
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Treeview
+        columns = ("Tarih", "Boyut", "Sebep", "Durum", "Tam Yol")
+        self.tree = ttk.Treeview(tree_frame, columns=columns, 
+                                 show="headings", height=21,
+                                 yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        
+        # Sütun başlıkları
+        self.tree.heading("Tarih", text="Yedekleme Tarihi")
+        self.tree.heading("Boyut", text="Dosya Boyutu")
+        self.tree.heading("Sebep", text="Y.Sebebi")
+        self.tree.heading("Durum", text="Dosya Durumu")
+        self.tree.heading("Tam Yol", text="Dosya Konumu")
+        
+        # Sütun genişlikleri
+        self.tree.column("Tarih", width=200, stretch=False, anchor="center")
+        self.tree.column("Boyut", width=140, stretch=False, anchor="center")
+        self.tree.column("Sebep", width=140, stretch=False, anchor="center")
+        self.tree.column("Durum", width=170, stretch=False, anchor="center")
+        self.tree.column("Tam Yol", width=900, stretch=False)
+        
+        # Scrollbar yapılandırması
+        vsb.config(command=self.tree.yview)
+        hsb.config(command=self.tree.xview)
+        
+        # Grid yerleşimi
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Context menü oluştur
+        self._create_context_menu()
+        self.tree.bind('<Button-3>', self._show_context_menu)
+        self.tree.bind('<Double-Button-1>', lambda e: self._show_in_explorer())
+        
+        # Butonlar
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+        
+        ctk.CTkButton(button_frame, text="📂 Göster",
+                     command=self._show_in_explorer, width=100).pack(side="left", padx=(0, 5))
+        
+        ctk.CTkButton(button_frame, text="Kapat (ESC)",
+                     command=self.destroy, width=100).pack(side="right")
+    
+    def _create_context_menu(self):
+        """Context menü oluştur"""
+        list_font = ("Segoe UI", 13)
+        self.context_menu = Menu(self, tearoff=0,
+                                 background="#333333",
+                                 foreground="white",
+                                 activebackground="#1F6AA5",
+                                 activeforeground="white",
+                                 font=list_font)
+        
+        self.context_menu.add_command(label="📂 Göster", command=self._show_in_explorer)
+    
+    def _show_context_menu(self, event):
+        """Context menüyü göster"""
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            try:
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.context_menu.grab_release()
+    
+    def _load_file_history(self):
+        """Dosyanın revision geçmişini veritabanından yükle"""
+        # Veritabanından dosya geçmişini al
+        history = self.db.get_file_revision_history(self.file_path, self.file_name)
+        
+        if not history:
+            self.tree.insert("", "end", values=("", "", "Veritabanında kayıt bulunamadı", "", ""))
+            return
+        
+        # Tag'leri yapılandır
+        self.tree.tag_configure('missing', background='#FF6B6B', foreground='white')
+        self.tree.tag_configure('exists', background='', foreground='')
+        
+        for record in history:
+            # Tarihi formatla
+            try:
+                dt = datetime.strptime(record['backup_date'], '%Y-%m-%d %H:%M:%S')
+                formatted_date = dt.strftime('%d.%m.%Y %H:%M')
+                date_folder = dt.strftime('%Y-%m-%d %H-%M')
+            except (ValueError, TypeError):
+                formatted_date = record['backup_date']
+                date_folder = record['backup_date']
+            
+            # Hedef yol - kayıttaki target_path veya varsayılan target_path kullan
+            target_path = record.get('target_path') or self.target_path
+            
+            # Dosyanın hedef klasöre göre göreli yolunu hesapla
+            relative_path = ""
+            if self.file_path.startswith(target_path):
+                relative_path = os.path.relpath(self.file_path, target_path)
+                if relative_path == ".":
+                    relative_path = ""
+            
+            # _REVISIONS klasöründeki dosya yolunu oluştur
+            revisions_base = os.path.join(target_path, '_REVISIONS')
+            if relative_path:
+                expected_path = os.path.join(revisions_base, date_folder, relative_path, self.file_name)
+            else:
+                expected_path = os.path.join(revisions_base, date_folder, self.file_name)
+            
+            # Dosyanın fiziksel olarak var olup olmadığını kontrol et
+            file_exists = os.path.exists(expected_path)
+            
+            # Durum ve tag belirleme
+            if file_exists:
+                status = "✓ Mevcut"
+                tag = 'exists'
+            else:
+                status = "✗ Bulunamadı"
+                tag = 'missing'
+            
+            # Treeview'e ekle
+            self.tree.insert("", "end", values=(
+                formatted_date,
+                BackupEngine.format_size(record['file_size']),
+                record['backup_reason'],
+                status,
+                expected_path
+            ), tags=(tag,))
+    
+    def _show_in_explorer(self):
+        """Seçili revision'u Windows Explorer'da göster"""
+        selection = self.tree.selection()
+        if not selection:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir revision seçin!")
+            return
+        
+        item = self.tree.item(selection[0])
+        full_path = item['values'][4]
+        
+        # print(f"DEBUG: Dosya yolu = {full_path}")
+        if full_path and os.path.exists(full_path):
+            # Windows Explorer'da dosyayı seçili olarak aç
+            subprocess.run(['explorer', '/select,', os.path.normpath(full_path)])
+        else:
+            ConfirmDialog.show_warning(self, "Uyarı", "Dosya bulunamadı!")
+

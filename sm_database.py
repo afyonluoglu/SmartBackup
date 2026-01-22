@@ -491,6 +491,32 @@ class DatabaseManager:
         ''', (backup_id,))
         return self.cursor.fetchone()[0] > 0
     
+    def get_file_revision_history(self, file_path: str, file_name: str) -> List[Dict]:
+        """Bir dosyanın tüm yedeklemelerdeki geçmişini getir
+        
+        Args:
+            file_path: Dosyanın dizin yolu
+            file_name: Dosya adı
+        
+        Returns:
+            List of dict: Her kayıt şunları içerir:
+                - backup_id: Yedekleme ID'si
+                - backup_date: Yedekleme tarihi
+                - file_size: Dosya boyutu
+                - backup_reason: Yedekleme sebebi
+                - target_path: Hedef klasör yolu
+        """
+        self.cursor.execute('''
+            SELECT bfd.backup_id, bfd.file_size, bfd.backup_reason, bfd.mapping_id,
+                   bh.backup_date, m.target_path
+            FROM backup_file_details bfd
+            JOIN backup_history bh ON bfd.backup_id = bh.id
+            LEFT JOIN mappings m ON bfd.mapping_id = m.id
+            WHERE bfd.file_path = ? AND bfd.file_name = ?
+            ORDER BY bh.backup_date DESC
+        ''', (file_path, file_name))
+        return [dict(row) for row in self.cursor.fetchall()]
+    
     # ==================== AYARLAR İŞLEMLERİ ====================
     
     def get_setting(self, key: str, default: str = "") -> str:
