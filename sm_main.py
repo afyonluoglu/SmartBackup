@@ -1,6 +1,6 @@
 """
 Smart Backup - Ana Uygulama
-Tarih: 19 Kasım 2025
+Tarih: 19 Kasım 2025 
 Yazar: Dr. Mustafa Afyonluoğlu
 
 Gerekli Kütüphaneler:

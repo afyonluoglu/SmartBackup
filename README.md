@@ -259,14 +259,14 @@ SmartBackup/
 
 Program, kod organizasyonu için **Mixin Pattern** kullanır. Bu sayede ana dosya küçük ve yönetilebilir kalırken, işlevsellik mantıksal gruplara ayrılmıştır:
 
-#### `sm_main.py` (Ana Modül - ~425 satır)
+#### `sm_main.py` (Ana Modül)
 Ana uygulama sınıfı ve widget oluşturma:
 - `SmartBackupApp` sınıfı (ProjectMixin, MappingMixin, BackupMixin'den miras alır)
 - Ana pencere ve UI düzeni
 - Tema değiştirme ve splitter yönetimi
 - Log paneli işlemleri
 
-#### `sm_project_mixin.py` (Proje Mixin - ~190 satır)
+#### `sm_project_mixin.py` (Proje Mixin)
 Proje yönetimi işlemleri:
 - `_load_projects`: Projeleri listele
 - `_add_project`: Yeni proje ekle
@@ -275,7 +275,7 @@ Proje yönetimi işlemleri:
 - `_duplicate_project`: Proje çoğalt
 - `_show_project_context_menu`: Sağ tık menüsü
 
-#### `sm_mapping_mixin.py` (Eşleştirme Mixin - ~355 satır)
+#### `sm_mapping_mixin.py` (Eşleştirme Mixin)
 Eşleştirme yönetimi işlemleri:
 - `_load_mappings`: Eşleştirmeleri listele
 - `_add_mapping`: Yeni eşleştirme ekle
@@ -288,7 +288,7 @@ Eşleştirme yönetimi işlemleri:
 - `_open_target_folder`: Hedef klasörü aç
 - `_open_revisions_folder`: Revision klasörü aç
 
-#### `sm_backup_mixin.py` (Yedekleme Mixin - ~920 satır)
+#### `sm_backup_mixin.py` (Yedekleme Mixin)
 Yedekleme ve analiz işlemleri:
 - `_calculate`: Dosya sayısı ve boyut hesapla
 - `_analyze`: Detaylı analiz yap
