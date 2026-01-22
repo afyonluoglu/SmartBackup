@@ -124,7 +124,8 @@ Her yedekleme sonrasında detaylı rapor:
 
 Smart Backup, yedekleme detayları penceresinden herhangi bir dosyanın geçmiş versiyonlarını görüntüleme imkanı sunar.
 
-#### Dosya Geçmişini Görüntüleme
+#### Dosya Geçmişini Görüntüleme 
+![Dosya Geçmişi](screenshots/10-file-history-detay.png)
 
 1. **Geçmiş** butonuna tıklayarak yedekleme geçmişi penceresini açın
 2. Bir yedekleme kaydına çift tıklayarak detay penceresini açın
@@ -252,6 +253,7 @@ SmartBackup/
     ├── 07-yedekleme geçmişi.png
     ├── 08-history-kart görünüm.png
     └── 09-history-detay.png
+    └── 10-file-history-detay.png
 ```
 
 ### 🧩 Modül Yapısı (Mixin Pattern)
