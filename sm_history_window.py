@@ -14,6 +14,7 @@ from typing import List, Dict
 from datetime import datetime
 import os
 import subprocess
+import fnmatch
 from sm_database import DatabaseManager
 from sm_backup_engine import BackupEngine
 from sm_ui_components import ConfirmDialog
@@ -143,7 +144,10 @@ class HistoryWindow(ctk.CTkToplevel):
                      command=self._show_details, width=130).pack(side="left", padx=(0, 5))
         ctk.CTkButton(button_frame, text="Seçili Kaydı Sil",
                      command=self._delete_selected, width=130,
-                     fg_color="red", hover_color="darkred").pack(side="left")
+                     fg_color="red", hover_color="darkred").pack(side="left", padx=(0, 5))
+        ctk.CTkButton(button_frame, text="🔍 Ara",
+                     command=self._show_file_search, width=100,
+                     fg_color="#2D7D46", hover_color="#236835").pack(side="left")
         
         ctk.CTkButton(button_frame, text="Kapat", command=self.destroy,
                      width=100).pack(side="right")
@@ -268,6 +272,8 @@ class HistoryWindow(ctk.CTkToplevel):
         self.context_menu.add_command(label="📄 Kayıt Sayfası", command=self._show_record_page)
         self.context_menu.add_command(label="📋 Detayları Göster", command=self._show_details)
         self.context_menu.add_separator()
+        self.context_menu.add_command(label="� Dosya Ara", command=self._show_file_search)
+        self.context_menu.add_separator()
         self.context_menu.add_command(label="🗑️ Sil", command=self._delete_selected)
 
         list_font = ("Segoe UI", 13) 
@@ -283,6 +289,10 @@ class HistoryWindow(ctk.CTkToplevel):
                 self.context_menu.tk_popup(event.x_root, event.y_root)
             finally:
                 self.context_menu.grab_release()
+    
+    def _show_file_search(self):
+        """Dosya arama penceresini göster"""
+        FileSearchWindow(self, self.db)
     
     def _show_record_page(self):
         """Seçili kaydın özet sayfasını göster"""
@@ -1147,3 +1157,491 @@ class FileHistoryWindow(ctk.CTkToplevel):
         else:
             ConfirmDialog.show_warning(self, "Uyarı", "Dosya bulunamadı!")
 
+
+class FileSearchWindow(ctk.CTkToplevel):
+    """Yedekleme veritabanında dosya arama penceresi"""
+    
+    MAX_DISPLAY_RESULTS = 200  # Maksimum gösterilecek satır sayısı
+    
+    def __init__(self, parent, db_manager: DatabaseManager):
+        super().__init__(parent)
+        
+        self.db = db_manager
+        self.search_results = []  # Arama sonuçlarını sakla
+        
+        self.title("Dosya Arama")
+        self.geometry("1100x700+150+50")
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        # Ana pencerenin üzerinde görünmesini sağla
+        self.transient(parent)
+        self.lift()
+        self.focus_force()
+        
+        self._create_widgets()
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        # Ana frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Başlık
+        title_label = ctk.CTkLabel(main_frame, text="🔍 Arşivde Dosya Arama",
+                                   font=("", 18, "bold"))
+        title_label.pack(pady=(0, 15))
+        
+        # Arama frame
+        search_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        search_frame.pack(fill="x", pady=(0, 10))
+        
+        # Arama etiket
+        search_label = ctk.CTkLabel(search_frame, text="Aranacak kelime:",
+                                    font=("", 12))
+        search_label.pack(side="left", padx=(0, 10))
+        
+        # Arama alanı
+        self.search_entry = ctk.CTkEntry(search_frame, width=400, 
+                                         placeholder_text="Dosya adı veya wildcard (örn: *.py, test*.txt)")
+        self.search_entry.pack(side="left", padx=(0, 10))
+        self.search_entry.bind('<Return>', lambda e: self._perform_search())
+        
+        # Arama butonu
+        self.search_btn = ctk.CTkButton(search_frame, text="Ara",
+                                        command=self._perform_search, width=80)
+        self.search_btn.pack(side="left", padx=(0, 10))
+        
+        # Temizle butonu
+        ctk.CTkButton(search_frame, text="Temizle",
+                     command=self._clear_search, width=80,
+                     fg_color="gray", hover_color="darkgray").pack(side="left")
+        
+        # Bilgi frame
+        info_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        info_frame.pack(fill="x", pady=(0, 10))
+        
+        # Sonuç sayısı etiketi
+        self.result_label = ctk.CTkLabel(info_frame, text="",
+                                         font=("", 11), text_color="#60C2FF")
+        self.result_label.pack(side="left")
+        
+        # Bilgi etiketi
+        info_text = "💡 İpucu: Wildcard kullanmak için * veya ? kullanın. Örn: *.py, test*.txt, dosya?.doc"
+        self.info_label = ctk.CTkLabel(info_frame, text=info_text,
+                                       font=("", 10), text_color="gray")
+        self.info_label.pack(side="right")
+        
+        # Treeview frame
+        tree_frame = ctk.CTkFrame(main_frame)
+        tree_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        # Scrollbar'lar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical")
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Treeview
+        columns = ("Tarih", "Dosya Adı", "Boyut", "Dizin", "İşlem")
+        self.tree = ttk.Treeview(tree_frame, columns=columns, 
+                                 show="headings",
+                                 yscrollcommand=vsb.set, 
+                                 xscrollcommand=hsb.set)
+        
+        # Sütun başlıkları
+        self.tree.heading("Tarih", text="Yedekleme Tarihi", command=lambda: self._sort_column("Tarih"))
+        self.tree.heading("Dosya Adı", text="Dosya Adı", command=lambda: self._sort_column("Dosya Adı"))
+        self.tree.heading("Boyut", text="Boyut", command=lambda: self._sort_column("Boyut"))
+        self.tree.heading("Dizin", text="Dosya Dizini", command=lambda: self._sort_column("Dizin"))
+        self.tree.heading("İşlem", text="İşlem Türü", command=lambda: self._sort_column("İşlem"))
+        
+        # Sütun genişlikleri
+        self.tree.column("Tarih", width=160, stretch=False, anchor="center")
+        self.tree.column("Dosya Adı", width=250, stretch=False)
+        self.tree.column("Boyut", width=100, stretch=False, anchor="center")
+        self.tree.column("Dizin", width=450, stretch=True)
+        self.tree.column("İşlem", width=120, stretch=False, anchor="center")
+        
+        # Scrollbar yapılandırması
+        vsb.config(command=self.tree.yview)
+        hsb.config(command=self.tree.xview)
+        
+        # Grid yerleşimi
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Çift tıklama ile klasörü aç
+        self.tree.bind('<Double-Button-1>', lambda e: self._open_folder())
+        
+        # Context menü oluştur
+        self._create_context_menu()
+        self.tree.bind('<Button-3>', self._show_context_menu)
+        
+        # Alt butonlar
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x")
+        
+        ctk.CTkButton(button_frame, text="📂 Klasörü Aç",
+                     command=self._open_folder, width=120).pack(side="left", padx=(0, 5))
+        
+        ctk.CTkButton(button_frame, text="📜 Dosya Geçmişi",
+                     command=self._show_file_history, width=120).pack(side="left")
+        
+        ctk.CTkButton(button_frame, text="Kapat (ESC)",
+                     command=self.destroy, width=100).pack(side="right")
+        
+        # Sıralama durumu
+        self.sort_column = None
+        self.sort_reverse = False
+        
+        # Arama alanına odaklan
+        self.search_entry.focus_set()
+    
+    def _create_context_menu(self):
+        """Context menü oluştur"""
+        list_font = ("Segoe UI", 13)
+        self.context_menu = Menu(self, tearoff=0,
+                                 background="#333333",
+                                 foreground="white",
+                                 activebackground="#1F6AA5",
+                                 activeforeground="white",
+                                 font=list_font)
+        
+        self.context_menu.add_command(label="📂 Klasörü Aç", command=self._open_folder)
+        self.context_menu.add_command(label="📜 Dosya Geçmişi", command=self._show_file_history)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="📋 Yolu Kopyala", command=self._copy_path)
+    
+    def _show_context_menu(self, event):
+        """Context menüyü göster"""
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            try:
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.context_menu.grab_release()
+    
+    def _perform_search(self):
+        """Arama işlemini gerçekleştir"""
+        search_term = self.search_entry.get().strip()
+        
+        if not search_term:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen aranacak bir kelime girin!")
+            return
+        
+        # Mevcut sonuçları temizle
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        # Wildcard kontrolü
+        has_wildcard = '*' in search_term or '?' in search_term
+        
+        # Veritabanından arama yap
+        self.search_results = self.db.search_files_in_backup(search_term, has_wildcard)
+        
+        # Her sonuç için revision klasör yolunu hesapla
+        for result in self.search_results:
+            result['display_path'] = self._calculate_revision_path(result)
+        
+        total_count = len(self.search_results)
+        display_count = min(total_count, self.MAX_DISPLAY_RESULTS)
+        
+        # Sonuç etiketini güncelle
+        if total_count == 0:
+            self.result_label.configure(text="Sonuç bulunamadı.", text_color="#FF6B6B")
+        elif total_count > self.MAX_DISPLAY_RESULTS:
+            self.result_label.configure(
+                text=f"Toplam {total_count:,} dosya bulundu. İlk {self.MAX_DISPLAY_RESULTS} sonuç gösteriliyor.",
+                text_color="#FFA500"
+            )
+        else:
+            self.result_label.configure(
+                text=f"Toplam {total_count:,} dosya bulundu.",
+                text_color="#60C2FF"
+            )
+        
+        # Sonuçları tabloya ekle
+        for i, result in enumerate(self.search_results[:display_count]):
+            # DEBUG: İlk 5 sonuç için bilgileri yazdır
+            if i < 5:
+                print(f"DEBUG Sonuç {i+1}: {result['file_name']} ({result['backup_date']})")
+                print(f"  display_path: {result.get('display_path')}")
+            
+            # Tarihi formatla
+            try:
+                dt = datetime.strptime(result['backup_date'], '%Y-%m-%d %H:%M:%S')
+                formatted_date = dt.strftime('%d.%m.%Y %H:%M')
+            except (ValueError, TypeError):
+                formatted_date = result['backup_date']
+            
+            self.tree.insert("", "end", values=(
+                formatted_date,
+                result['file_name'],
+                BackupEngine.format_size(result['file_size']),
+                result['display_path'],  # Revision veya hedef klasör yolu
+                result['backup_reason']
+            ))
+    
+    def _calculate_revision_path(self, result: dict) -> str:
+        """Dosyanın o tarihteki revision klasöründeki tam yolunu hesapla
+        
+        backup_reason'a göre:
+        - "yeni dosya" veya "daha yeni": Dosya hedef klasörde veya _REVISIONS altında olabilir
+        - Tarih bilgisine göre _REVISIONS klasör yapısını oluştur
+        
+        Args:
+            result: Arama sonucu dict
+        
+        Returns:
+            Dosyanın tam yolu (ya hedef klasörde ya da _REVISIONS altında)
+        """
+        source_path = result.get('source_path', '') or ''
+        target_path = result.get('target_path', '') or ''
+        file_path = result.get('file_path', '') or ''
+        file_name = result.get('file_name', '')
+        backup_date = result.get('backup_date', '')
+        backup_reason = result.get('backup_reason', '').lower()
+        
+        if not source_path or not target_path or source_path == 'None' or target_path == 'None':
+            return file_path
+        
+        # Yolları normalleştir
+        source_path_norm = os.path.normpath(source_path)
+        target_path_norm = os.path.normpath(target_path)
+        file_path_norm = os.path.normpath(file_path)
+        
+        # Göreli yolu hesapla (source_path'ten sonraki kısım)
+        relative_path = ""
+        if file_path_norm.lower().startswith(source_path_norm.lower()):
+            relative_path = file_path_norm[len(source_path_norm):].lstrip('\\/')
+        
+        # Hedef klasördeki dosyanın dizini
+        if relative_path:
+            target_file_dir = os.path.join(target_path_norm, relative_path)
+        else:
+            target_file_dir = target_path_norm
+        
+        # Tarihi _REVISIONS klasör formatına çevir
+        try:
+            dt = datetime.strptime(backup_date, '%Y-%m-%d %H:%M:%S')
+            date_folder = dt.strftime('%Y-%m-%d %H-%M')
+        except (ValueError, TypeError):
+            date_folder = backup_date.replace(':', '-').replace(' ', '_') if backup_date else ''
+        
+        # _REVISIONS klasöründeki yol
+        # Yapı: hedef_klasör/_REVISIONS/YYYY-MM-DD HH-MM/göreli_yol/dosya
+        if relative_path:
+            revision_file_path = os.path.join(target_path_norm, '_REVISIONS', date_folder, relative_path, file_name)
+        else:
+            revision_file_path = os.path.join(target_path_norm, '_REVISIONS', date_folder, file_name)
+        
+        # Hedef klasördeki dosya yolu
+        target_file_path = os.path.join(target_file_dir, file_name)
+        
+        # Önce _REVISIONS'da ara, sonra hedef klasörde
+        if os.path.exists(revision_file_path):
+            # Dosya _REVISIONS klasöründe - dizin yolunu döndür
+            return os.path.dirname(revision_file_path)
+        elif os.path.exists(target_file_path):
+            # Dosya hedef klasörde (güncel dosya) - dizin yolunu döndür
+            return target_file_dir
+        else:
+            # Dosya bulunamadı - _REVISIONS yolunu göster (disk takılı olmayabilir)
+            return os.path.dirname(revision_file_path)
+    
+    def _calculate_target_folder(self, result: dict) -> str:
+        """Dosyanın hedef klasördeki yolunu hesapla (eski metod - geriye uyumluluk için)
+        
+        Args:
+            result: Arama sonucu dict (source_path, target_path, file_path içermeli)
+        
+        Returns:
+            Hedef klasördeki dosya dizini yolu
+        """
+        source_path = result.get('source_path', '') or ''
+        target_path = result.get('target_path', '') or ''
+        file_path = result.get('file_path', '') or ''
+        
+        if not source_path or not target_path or source_path == 'None' or target_path == 'None':
+            # Mapping bilgisi yoksa file_path'i olduğu gibi döndür
+            return file_path
+        
+        # Yolları normalleştir - hem / hem \ karakterlerini aynı hale getir
+        source_path_norm = os.path.normpath(source_path)
+        target_path_norm = os.path.normpath(target_path)
+        file_path_norm = os.path.normpath(file_path)
+        
+        # file_path'in source_path'e göre göreli kısmını bul
+        # Örnek: source_path = "C:\D\1\LIBRARY", file_path = "C:\D\1\LIBRARY\DOCS"
+        # relative = "DOCS"
+        if file_path_norm.lower().startswith(source_path_norm.lower()):
+            # Kaynak yoldan göreli yolu çıkar
+            relative_path = file_path_norm[len(source_path_norm):].lstrip('\\/')
+            # Hedef yola ekle
+            if relative_path:
+                return os.path.join(target_path_norm, relative_path)
+            else:
+                return target_path_norm
+        else:
+            # file_path kaynak yolu içermiyorsa olduğu gibi döndür
+            return file_path
+    
+    def _clear_search(self):
+        """Arama alanını ve sonuçları temizle"""
+        self.search_entry.delete(0, 'end')
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.result_label.configure(text="")
+        self.search_results = []
+        self.search_entry.focus_set()
+    
+    def _sort_column(self, col):
+        """Sütuna göre sırala"""
+        # Aynı sütuna tıklanırsa sıralamayı tersine çevir
+        if self.sort_column == col:
+            self.sort_reverse = not self.sort_reverse
+        else:
+            self.sort_column = col
+            self.sort_reverse = False
+        
+        # Treeview'deki verileri al
+        items = [(self.tree.set(item, col), item) for item in self.tree.get_children('')]
+        
+        # Boyut sütunu için özel sıralama (numerik)
+        if col == "Boyut":
+            def get_size_bytes(size_str):
+                try:
+                    # "1.23 MB" gibi bir değeri byte'a çevir
+                    size_str = size_str.strip()
+                    if not size_str or size_str == "-":
+                        return 0
+                    parts = size_str.split()
+                    if len(parts) != 2:
+                        return 0
+                    value = float(parts[0].replace(',', '.'))
+                    unit = parts[1].upper()
+                    multipliers = {'B': 1, 'KB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4}
+                    return int(value * multipliers.get(unit, 1))
+                except:
+                    return 0
+            
+            items.sort(key=lambda x: get_size_bytes(x[0]), reverse=self.sort_reverse)
+        else:
+            # Diğer sütunlar için alfabetik sıralama
+            items.sort(key=lambda x: x[0].lower() if isinstance(x[0], str) else x[0], 
+                      reverse=self.sort_reverse)
+        
+        # Sıralanmış verileri yeniden yerleştir
+        for index, (val, item) in enumerate(items):
+            self.tree.move(item, '', index)
+    
+    def _get_selected_file_data(self):
+        """Seçili dosyanın verilerini al"""
+        selection = self.tree.selection()
+        if not selection:
+            return None
+        
+        item = self.tree.item(selection[0])
+        values = item['values']
+        
+        # Treeview'deki değerler: Tarih, Dosya Adı, Boyut, display_path (Dizin), İşlem Türü
+        display_path = values[3]  # Revision veya hedef klasör yolu
+        file_name = values[1]
+        formatted_date = values[0]  # Tarihi de al (eşleşme için)
+        
+        # search_results'dan tam bilgiyi bul
+        for result in self.search_results:
+            if result.get('display_path') == display_path and result['file_name'] == file_name:
+                return {
+                    'display_path': display_path,  # Gösterilen yol (revision veya hedef)
+                    'file_path': result['file_path'],  # Kaynak dizin  
+                    'file_name': file_name,
+                    'source_path': result.get('source_path', ''),
+                    'target_path': result.get('target_path', ''),
+                    'backup_date': result.get('backup_date', '')
+                }
+        
+        # Eşleşme bulunamazsa basit dict döndür
+        return {
+            'display_path': display_path,
+            'file_path': display_path,
+            'file_name': file_name
+        }
+    
+    def _open_folder(self):
+        """Seçili dosyanın revision/hedef klasörünü Windows Explorer'da aç"""
+        file_data = self._get_selected_file_data()
+        if not file_data:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        # display_path revision veya hedef klasör yolunu içerir
+        display_path = file_data['display_path']
+        file_name = file_data['file_name']
+        
+        # Tam dosya yolu
+        full_path = os.path.join(display_path, file_name)
+        print(f">>> DEBUG: Açılacak dosya yolu: {full_path}")
+        print(f">>> DEBUG: Dosya var mı: {os.path.exists(full_path)}")
+        
+        if os.path.exists(full_path):
+            # Windows Explorer'da dosyayı seçili olarak aç
+            subprocess.run(['explorer', '/select,', os.path.normpath(full_path)])
+        elif os.path.exists(display_path):
+            # Dosya bulunamadıysa sadece klasörü aç
+            print(f">>> DEBUG: Dosya yok, klasör açılıyor: {display_path}")
+            subprocess.run(['explorer', os.path.normpath(display_path)])
+        else:
+            ConfirmDialog.show_warning(self, "Uyarı", f"Klasör bulunamadı:\n{display_path}\n\nDisk takılı olmayabilir.")
+    
+    def _show_file_history(self):
+        """Seçili dosyanın geçmişini göster"""
+        file_data = self._get_selected_file_data()
+        if not file_data:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        # Hedef klasör bilgisini al
+        target_path = file_data.get('target_path', file_data.get('display_path', ''))
+        
+        if not target_path:
+            target_path = file_data['display_path']
+        
+        # FileHistoryWindow'u aç - kaynak dizin yolu gerekli (file_path)
+        FileHistoryWindow(self, self.db, file_data['file_path'], file_data['file_name'], target_path)
+    
+    def _copy_path(self):
+        """Gösterilen klasördeki dosya yolunu panoya kopyala"""
+        file_data = self._get_selected_file_data()
+        if not file_data:
+            return
+        
+        # Gösterilen yoldaki tam dosya yolunu kopyala
+        full_path = os.path.join(file_data['display_path'], file_data['file_name'])
+        self.clipboard_clear()
+        self.clipboard_append(full_path)
+        
+        # Kısa süreliğine onay mesajı göster
+        self.result_label.configure(text="✓ Yol panoya kopyalandı!", text_color="#65FE65")
+        self.after(2000, lambda: self._restore_result_label())
+    
+    def _restore_result_label(self):
+        """Sonuç etiketini eski haline döndür"""
+        total_count = len(self.search_results)
+        if total_count == 0:
+            self.result_label.configure(text="", text_color="#4138E5")
+        elif total_count > self.MAX_DISPLAY_RESULTS:
+            self.result_label.configure(
+                text=f"Toplam {total_count:,} dosya bulundu. İlk {self.MAX_DISPLAY_RESULTS} sonuç gösteriliyor.",
+                text_color="#5B0900"
+            )
+        else:
+            self.result_label.configure(
+                text=f"Toplam {total_count:,} dosya bulundu.",
+                text_color="#FF9148"
+            )

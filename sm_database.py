@@ -608,6 +608,59 @@ class DatabaseManager:
               int(show_revision_files), int(show_deleted_files), max_files_to_show, now))
         self.conn.commit()
     
+    # ==================== DOSYA ARAMA İŞLEMLERİ ====================
+    
+    def search_files_in_backup(self, search_term: str, use_wildcard: bool = False) -> List[Dict]:
+        """Yedekleme veritabanında dosya ara
+        
+        Args:
+            search_term: Aranacak kelime veya wildcard pattern
+            use_wildcard: True ise fnmatch wildcard kullanılır, 
+                         False ise LIKE ile içerik araması yapılır
+        
+        Returns:
+            List of dict: Her kayıt şunları içerir:
+                - backup_id: Yedekleme ID'si
+                - backup_date: Yedekleme tarihi
+                - file_path: Dosyanın kaynak dizini
+                - file_name: Dosya adı
+                - file_size: Dosya boyutu
+                - backup_reason: Yedekleme sebebi
+                - source_path: Kaynak klasör yolu (mapping'den)
+                - target_path: Hedef klasör yolu (mapping'den)
+        """
+        if use_wildcard:
+            # Wildcard pattern - SQLite LIKE'a çevir
+            # fnmatch: * -> %, ? -> _
+            sql_pattern = search_term.replace('*', '%').replace('?', '_')
+            
+            self.cursor.execute('''
+                SELECT bfd.backup_id, bfd.file_path, bfd.file_name, bfd.file_size,
+                       bfd.backup_reason, bfd.mapping_id, bh.backup_date, 
+                       m.source_path, m.target_path
+                FROM backup_file_details bfd
+                JOIN backup_history bh ON bfd.backup_id = bh.id
+                LEFT JOIN mappings m ON bfd.mapping_id = m.id
+                WHERE bfd.file_name LIKE ?
+                ORDER BY bh.backup_date DESC
+            ''', (sql_pattern,))
+        else:
+            # Normal arama - dosya adı içinde kelime geçiyor mu
+            search_pattern = f'%{search_term}%'
+            
+            self.cursor.execute('''
+                SELECT bfd.backup_id, bfd.file_path, bfd.file_name, bfd.file_size,
+                       bfd.backup_reason, bfd.mapping_id, bh.backup_date,
+                       m.source_path, m.target_path
+                FROM backup_file_details bfd
+                JOIN backup_history bh ON bfd.backup_id = bh.id
+                LEFT JOIN mappings m ON bfd.mapping_id = m.id
+                WHERE bfd.file_name LIKE ?
+                ORDER BY bh.backup_date DESC
+            ''', (search_pattern,))
+        
+        return [dict(row) for row in self.cursor.fetchall()]
+    
     def close(self):
         """Veritabanı bağlantısını kapat"""
         if self.conn:

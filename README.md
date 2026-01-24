@@ -2,9 +2,9 @@
 
 ![Smart Backup Ana Ekran](screenshots/00-giriş%20ekranı.png)
 
-**Tarih:** 3 Ocak 2026  
+**Tarih:** 24 Ocak 2026  
 **Yazar:** Dr. Mustafa Afyonluoğlu  
-**Versiyon:** 2.0
+**Versiyon:** 2.1
 
 ---
 
@@ -162,6 +162,57 @@ Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız va
 ```
 
 > **Not:** Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
+
+### 🔍 Dosya Arama (Yeni Özellik)
+
+Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
+
+![Dosya Arama](screenshots/11-dosya-arama.png)
+
+#### Arama Özellikleri
+
+| Özellik | Açıklama |
+|---------|----------|
+| **Normal Arama** | Girilen kelimeyi içeren tüm dosya isimleri listelenir |
+| **Wildcard Desteği** | `*` ve `?` karakterleri ile pattern araması (örn: `*.py`, `test*.txt`, `dosya?.doc`) |
+| **Maksimum 200 Sonuç** | 200'den fazla eşleşme varsa ilk 200 gösterilir, toplam sayı belirtilir |
+| **Sütun Sıralama** | Sütun başlıklarına tıklayarak artan/azalan sıralama |
+
+#### Arama Sonuçları Tablosu
+
+| Sütun | Açıklama |
+|-------|----------|
+| Yedekleme Tarihi | Dosyanın yedeklendiği veya revizyona aktarıldığı tarih |
+| Dosya Adı | Dosyanın adı |
+| Boyut | Dosyanın o kayıttaki boyutu |
+| Dosya Dizini | Dosyanın bulunduğu hedef klasör yolu |
+| İşlem Türü | Yedekleme sebebi (Yeni Dosya, Daha Yeni, vb.) |
+
+#### Kullanım
+
+1. **Geçmiş** butonuna tıklayarak yedekleme geçmişi penceresini açın
+2. **"🔍 Ara"** butonuna tıklayın
+3. Arama kutusuna dosya adını veya wildcard pattern girin
+4. **Enter** tuşuna basın veya **"Ara"** butonuna tıklayın
+5. Sonuç listesinde bir dosyaya **çift tıklayarak** veya **"📂 Klasörü Aç"** butonu ile hedef klasörü açın
+
+#### Sağ Tık Menüsü
+
+- **📂 Klasörü Aç**: Dosyanın yedeklendiği hedef klasörü Windows Explorer'da açar
+- **📜 Dosya Geçmişi**: Dosyanın tüm revision geçmişini görüntüler
+- **📋 Yolu Kopyala**: Dosyanın tam yolunu panoya kopyalar
+
+#### Örnek Wildcard Kullanımları
+
+| Pattern | Açıklama |
+|---------|----------|
+| `*.py` | Tüm Python dosyaları |
+| `*.doc*` | Word dosyaları (.doc, .docx) |
+| `rapor*.xlsx` | "rapor" ile başlayan Excel dosyaları |
+| `test?.txt` | "test" + tek karakter + .txt uzantılı dosyalar |
+| `*backup*` | Adında "backup" geçen tüm dosyalar |
+
+> **İpucu:** Wildcard kullanmadan arama yaparsanız, girilen kelimeyi içeren tüm dosyalar listelenir. Örneğin "rapor" araması, "rapor.docx", "yillik_rapor.pdf", "rapor_2024.xlsx" gibi tüm dosyaları bulur.
 
 ### 🎨 Kullanıcı Arayüzü
 

@@ -470,7 +470,7 @@
     <header id="top">
         <h1>🗄️ Smart Backup</h1>
         <p>Akıllı Yedekleme Aracı - Kullanım Kılavuzu</p>
-        <div class="version-badge">📦 Versiyon 2.0 | 📅 3 Ocak 2026</div>
+        <div class="version-badge">📦 Versiyon 2.1 | 📅 24 Ocak 2026</div>
     </header>
 
     <nav>
@@ -482,6 +482,7 @@
             <li><a href="#analiz">🔍 Analiz</a></li>
             <li><a href="#yedekleme">💾 Yedekleme</a></li>
             <li><a href="#gecmis">📜 Geçmiş</a></li>
+            <li><a href="#dosya-arama">🔎 Dosya Arama</a></li>
             <li><a href="#modul">🧩 Modüller</a></li>
             <li><a href="#kisayollar">⌨️ Kısayollar</a></li>
             <li><a href="#sorun">🔧 Sorun Giderme</a></li>
@@ -876,6 +877,108 @@
                 <div>
                     <strong>Not:</strong> Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. 
                     Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
+                </div>
+            </div>
+        </section>
+        
+        <!-- Dosya Arama -->
+        <section id="dosya-arama">
+            <h2>🔎 Dosya Arama <span class="badge badge-new">YENİ</span></h2>
+            <p>Yedekleme geçmişi penceresinde <strong>"🔍 Ara"</strong> butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.</p>
+            
+            <h3>Arama Penceresini Açma</h3>
+            <ol class="steps">
+                <li><strong>"Geçmiş"</strong> butonuna tıklayarak yedekleme geçmişi penceresini açın</li>
+                <li>Alt kısımdaki <strong>"🔍 Ara"</strong> butonuna tıklayın</li>
+                <li>Açılan arama penceresinde dosya adını veya wildcard pattern girin</li>
+                <li><kbd>Enter</kbd> tuşuna basın veya <strong>"Ara"</strong> butonuna tıklayın</li>
+            </ol>
+            
+            <h4>Arama Türleri</h4>
+            <table>
+                <tr>
+                    <th>Arama Türü</th>
+                    <th>Açıklama</th>
+                    <th>Örnek</th>
+                </tr>
+                <tr>
+                    <td><strong>Normal Arama</strong></td>
+                    <td>Girilen kelimeyi içeren tüm dosya isimleri</td>
+                    <td><code>rapor</code> → rapor.docx, yillik_rapor.pdf, rapor_2024.xlsx</td>
+                </tr>
+                <tr>
+                    <td><strong>Wildcard Arama</strong></td>
+                    <td><code>*</code> ve <code>?</code> karakterleri ile pattern araması</td>
+                    <td><code>*.py</code> → tüm Python dosyaları</td>
+                </tr>
+            </table>
+            
+            <h4>Wildcard Örnekleri</h4>
+            <table>
+                <tr>
+                    <th>Pattern</th>
+                    <th>Açıklama</th>
+                </tr>
+                <tr>
+                    <td><code>*.py</code></td>
+                    <td>Tüm Python dosyaları</td>
+                </tr>
+                <tr>
+                    <td><code>*.doc*</code></td>
+                    <td>Word dosyaları (.doc, .docx)</td>
+                </tr>
+                <tr>
+                    <td><code>rapor*.xlsx</code></td>
+                    <td>"rapor" ile başlayan Excel dosyaları</td>
+                </tr>
+                <tr>
+                    <td><code>test?.txt</code></td>
+                    <td>"test" + tek karakter + .txt uzantılı dosyalar</td>
+                </tr>
+                <tr>
+                    <td><code>*backup*</code></td>
+                    <td>Adında "backup" geçen tüm dosyalar</td>
+                </tr>
+            </table>
+            
+            <h4>Arama Sonuçları</h4>
+            <p>Sonuç tablosunda aşağıdaki bilgiler görüntülenir:</p>
+            <ul>
+                <li><strong>Yedekleme Tarihi:</strong> Dosyanın yedeklendiği veya revizyona aktarıldığı tarih</li>
+                <li><strong>Dosya Adı:</strong> Dosyanın adı</li>
+                <li><strong>Boyut:</strong> Dosyanın o kayıttaki boyutu</li>
+                <li><strong>Dosya Dizini:</strong> Dosyanın bulunduğu hedef klasör yolu</li>
+                <li><strong>İşlem Türü:</strong> Yedekleme sebebi (Yeni Dosya, Daha Yeni, vb.)</li>
+            </ul>
+            
+            <div class="info">
+                <span class="info-icon">📊</span>
+                <div>
+                    <strong>Sonuç Limiti:</strong> 200'den fazla eşleşme varsa sadece ilk 200 sonuç gösterilir. 
+                    Toplam eşleşen dosya sayısı ekranda ayrıca belirtilir.
+                </div>
+            </div>
+            
+            <h4>Sağ Tık Menüsü</h4>
+            <ul>
+                <li><strong>📂 Klasörü Aç:</strong> Dosyanın yedeklendiği hedef klasörü Windows Explorer'da açar</li>
+                <li><strong>📜 Dosya Geçmişi:</strong> Dosyanın tüm revision geçmişini görüntüler</li>
+                <li><strong>📋 Yolu Kopyala:</strong> Dosyanın tam yolunu panoya kopyalar</li>
+            </ul>
+            
+            <h4>Ek Özellikler</h4>
+            <ul>
+                <li>📊 <strong>Sütun Sıralama:</strong> Sütun başlıklarına tıklayarak artan/azalan sıralama</li>
+                <li>🖱️ <strong>Çift Tıklama:</strong> Dosyanın hedef klasörünü Windows Explorer'da açar</li>
+                <li>⌨️ <strong>Klavye Desteği:</strong> Enter ile arama, ESC ile pencereyi kapatma</li>
+                <li>🧹 <strong>Temizle Butonu:</strong> Arama alanını ve sonuçları temizler</li>
+            </ul>
+            
+            <div class="tip">
+                <span class="tip-icon">💡</span>
+                <div>
+                    <strong>İpucu:</strong> Wildcard kullanmadan arama yaparsanız, girilen kelimeyi içeren tüm dosyalar listelenir. 
+                    Örneğin "rapor" araması, "rapor.docx", "yillik_rapor.pdf", "rapor_2024.xlsx" gibi tüm dosyaları bulur.
                 </div>
             </div>
         </section>
