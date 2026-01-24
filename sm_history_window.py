@@ -1223,8 +1223,8 @@ class FileSearchWindow(ctk.CTkToplevel):
         info_frame.pack(fill="x", pady=(0, 10))
         
         # Sonuç sayısı etiketi
-        self.result_label = ctk.CTkLabel(info_frame, text="",
-                                         font=("", 11), text_color="#60C2FF")
+        self.result_label = ctk.CTkLabel(info_frame, text="-",
+                                         font=("", 11), text_color="#FF9060")
         self.result_label.pack(side="left")
         
         # Bilgi etiketi
@@ -1357,12 +1357,13 @@ class FileSearchWindow(ctk.CTkToplevel):
         elif total_count > self.MAX_DISPLAY_RESULTS:
             self.result_label.configure(
                 text=f"Toplam {total_count:,} dosya bulundu. İlk {self.MAX_DISPLAY_RESULTS} sonuç gösteriliyor.",
-                text_color="#FFA500"
+                text_color="#FF8D2F"
             )
         else:
+            print(f"DEBUG: Toplam {total_count:,} dosya bulundu.")
             self.result_label.configure(
-                text=f"Toplam {total_count:,} dosya bulundu.",
-                text_color="#60C2FF"
+                text=f"  Toplam {total_count:,} dosya bulundu.",
+                text_color="#BC5500"
             )
         
         # Sonuçları tabloya ekle
