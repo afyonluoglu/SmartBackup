@@ -197,11 +197,11 @@ Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız va
 
 > **Not:** Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
 
-### 🔍 Dosya Arama
+### 🔍 Yedekleme Geçmişinde Dosya Arama
 
 Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
 
-![Dosya Arama](screenshots/12-file-search.png)
+![Dosya Arama](screenshots/11-history-search.png)
 
 #### Arama Özellikleri
 
@@ -248,12 +248,23 @@ Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanı
 
 > **İpucu:** Wildcard kullanmadan arama yaparsanız, girilen kelimeyi içeren tüm dosyalar listelenir. Örneğin "rapor" araması, "rapor.docx", "yillik_rapor.pdf", "rapor_2024.xlsx" gibi tüm dosyaları bulur.
 
-### 🔍 Yedekleme Geçmişinde Arama
+### 🔍 Dosya Arama
 
-Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
+Herhangi bir eşleştirmede tanımladığınız kaynak klasörde veya kendi vereceğiniz herhangi bir klasörde dosya araması yapabilirsiniz.
 
-![Dosya Arama](screenshots/11-history-search.png)
+![Dosya Arama](screenshots/12-file-search.png)
 
+#### Yöntem 1: Eşleştirme Üzerinden
+
+1. Eşleştirme listesinde bir satıra sağ tık yapın
+2. "Kaynak Klasörde Ara" seçeneğini seçin
+3. Arama penceresi otomatik olarak kaynak klasörü yükler
+
+#### Yöntem 2: Genel Arama
+
+1. Ana ekranda "Klasörde Ara" düğmesine tıklayın
+2. "Gözat..." ile istediğiniz klasörü seçin
+3. Herhangi bir klasörde arama yapabilirsiniz
 
 ### 🎨 Kullanıcı Arayüzü
 
