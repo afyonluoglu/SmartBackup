@@ -7,7 +7,7 @@ Bu modül SmartBackupApp sınıfı için eşleştirme işlemlerini içerir.
 """
 
 import os
-from sm_ui_components import MappingDialog, ConfirmDialog
+from sm_ui_components import MappingDialog, ConfirmDialog, SourceSearchDialog
 
 
 class MappingMixin:
@@ -295,6 +295,37 @@ class MappingMixin:
                 f"Klasör açılamadı:\n\n{str(e)}"
             )
     
+    def _search_in_source(self):
+        """Seçili eşleştirmenin kaynak klasöründe arama yap"""
+        selection = self.mapping_tree.selection()
+        if not selection:
+            return
+        
+        item = self.mapping_tree.item(selection[0])
+        mapping_id = item['values'][0]
+        
+        # Eşleştirmeyi al
+        mappings = self.db.get_mappings_by_project(self.current_project_id)
+        mapping = next((m for m in mappings if m['id'] == mapping_id), None)
+        
+        if not mapping:
+            return
+        
+        source_path = mapping['source_path']
+        include_subdirs = bool(mapping['include_subdirs'])
+        
+        # Klasörün varlığını kontrol et
+        if not os.path.exists(source_path):
+            ConfirmDialog.show_warning(
+                self, 
+                "Klasör Bulunamadı", 
+                f"Kaynak klasör mevcut değil:\n\n{source_path}"
+            )
+            return
+        
+        # Arama dialog'unu aç
+        SourceSearchDialog.show(self, source_path, include_subdirs)
+    
     def _open_target_folder(self):
         """Seçili eşleştirmenin hedef klasörünü aç"""
         selection = self.mapping_tree.selection()
@@ -406,6 +437,7 @@ class MappingMixin:
         self.mapping_context_menu.add_command(label="Çoğalt", command=self._duplicate_mapping)
         self.mapping_context_menu.add_command(label="Kopyala", command=self._copy_mapping)
         self.mapping_context_menu.add_separator()
+        self.mapping_context_menu.add_command(label="Kaynak Klasörde Ara", command=self._search_in_source)
         self.mapping_context_menu.add_command(label="Kaynak Klasörü Aç", command=self._open_source_folder)
         
         # Hedef ve Revision seçeneklerini sadece erişilebilir sürücülerde göster

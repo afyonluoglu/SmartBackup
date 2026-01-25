@@ -12,7 +12,6 @@ import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from typing import Callable, Optional
 
-
 class ProjectDialog(ctk.CTkToplevel):
     """Proje ekleme/düzenleme dialog'u"""
     
@@ -840,3 +839,324 @@ class ConfirmDialog:
     def show_error(parent, title: str, message: str):
         """Hata mesajı göster"""
         messagebox.showerror(title, message, parent=parent)
+
+
+class SourceSearchDialog(ctk.CTkToplevel):
+    """Kaynak klasörde dosya arama dialog'u"""
+    
+    def __init__(self, parent, source_path: str = None, include_subfolders: bool = True):
+        super().__init__(parent)
+        
+        self.source_path = source_path
+        self.include_subfolders = include_subfolders
+        
+        width = 1000
+        height = 600
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+
+        self.geometry(f"{width}x{height}+{x}+{y}")
+        self.title("Dosya Ara")
+        
+        # Modal yap
+        self.transient(parent)
+        self.grab_set()
+        
+        # ESC tuşu ile kapat
+        self.bind('<Escape>', lambda e: self.destroy())
+        
+        self._create_widgets()
+    
+    def _create_widgets(self):
+        """Widget'ları oluştur"""
+        import os
+        import glob
+        from tkinter import ttk
+        
+        # Padding frame
+        main_frame = ctk.CTkFrame(self)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Klasör seçimi
+        folder_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        folder_frame.pack(fill="x", pady=(0, 10))
+        
+        ctk.CTkLabel(folder_frame, text="Klasör:", 
+                    font=("", 12, "bold")).pack(side="left", padx=(0, 10))
+        
+        self.folder_entry = ctk.CTkEntry(folder_frame, width=700, 
+                                         font=("", 12))
+        self.folder_entry.pack(side="left", padx=(0, 10))
+        if self.source_path:
+            self.folder_entry.insert(0, self.source_path)
+        
+        ctk.CTkButton(folder_frame, text="Gözat...", 
+                     command=self._browse_folder, width=100).pack(side="left")
+        
+        # Arama girişi
+        search_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        search_frame.pack(fill="x", pady=(0, 10))
+        
+        ctk.CTkLabel(search_frame, text="Arama Kelimesi:", 
+                    font=("", 12)).pack(side="left", padx=(0, 10))
+        
+        self.search_entry = ctk.CTkEntry(search_frame, width=400, 
+                                        font=("", 12))
+        self.search_entry.pack(side="left", padx=(0, 10))
+        self.search_entry.bind('<Return>', lambda e: self._search_files())
+        
+        ctk.CTkButton(search_frame, text="Ara", 
+                     command=self._search_files, width=100).pack(side="left")
+        
+        # Alt klasörler checkbox
+        self.subfolders_var = ctk.BooleanVar(value=self.include_subfolders)
+        ctk.CTkCheckBox(search_frame, text="Alt klasörleri dahil et",
+                       variable=self.subfolders_var).pack(side="left", padx=(20, 0))
+        
+        # Sonuç sayısı
+        self.result_label = ctk.CTkLabel(main_frame, text="Sonuç: 0 dosya",
+                                        font=("", 11))
+        self.result_label.pack(pady=(0, 5))
+        
+        # Treeview için style
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Search.Treeview", 
+                       background="#2b2b2b", 
+                       foreground="white",
+                       fieldbackground="#2b2b2b", 
+                       borderwidth=0,
+                       font=("Arial", 14),
+                       rowheight=25)
+        style.configure("Search.Treeview.Heading", 
+                       background="#1f538d", 
+                       foreground="white",
+                       font=("Arial", 15, "bold"))
+        style.map("Search.Treeview",
+                 background=[('selected', '#1F6AA5')],
+                 foreground=[('selected', 'white')])
+        
+        # Treeview frame
+        tree_frame = ctk.CTkFrame(main_frame)
+        tree_frame.pack(fill="both", expand=True)
+        
+        # Scrollbar'lar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical")
+        hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
+        
+        # Treeview
+        columns = ("Dosya Adı", "Klasör", "Boyut")
+        self.results_tree = ttk.Treeview(tree_frame, 
+                                        columns=columns,
+                                        show="headings",
+                                        style="Search.Treeview",
+                                        yscrollcommand=vsb.set,
+                                        xscrollcommand=hsb.set)
+        
+        # Sütun başlıkları
+        self.results_tree.heading("Dosya Adı", text="Dosya Adı")
+        self.results_tree.heading("Klasör", text="Klasör")
+        self.results_tree.heading("Boyut", text="Boyut")
+        
+        # Sütun genişlikleri
+        self.results_tree.column("Dosya Adı", width=250)
+        self.results_tree.column("Klasör", width=500)
+        self.results_tree.column("Boyut", width=100, anchor="e")
+        
+        # Scrollbar yapılandırması
+        vsb.config(command=self.results_tree.yview)
+        hsb.config(command=self.results_tree.xview)
+        
+        # Grid yerleşimi
+        self.results_tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+        
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
+        
+        # Çift tıklama ile dosya aç
+        self.results_tree.bind('<Double-Button-1>', self._open_file)
+        
+        # Butonlar frame
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x", pady=(10, 0))
+        
+        # Göster butonu
+        ctk.CTkButton(button_frame, text="Göster", 
+                     command=lambda: self._open_file(None), width=120,
+                     fg_color="#1F6AA5", hover_color="#1557A0").pack(side="left", padx=(0, 10))
+        
+        # Kapat butonu
+        ctk.CTkButton(button_frame, text="Kapat", 
+                     command=self.destroy, width=100).pack(side="left")
+        
+        # Başlangıçta odakla
+        self.search_entry.focus()
+    
+    def _browse_folder(self):
+        """Klasör seç"""
+        folder = filedialog.askdirectory(parent=self, title="Arama Yapılacak Klasörü Seçin")
+        if folder:
+            self.folder_entry.delete(0, "end")
+            self.folder_entry.insert(0, folder)
+            self.source_path = folder
+    
+    def _search_files(self):
+        """Arama yap"""
+        import os
+        import glob
+        
+        search_term = self.search_entry.get().strip()
+        if not search_term:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen arama kelimesi girin!")
+            return
+        
+        # Klasör entry'den al
+        self.source_path = self.folder_entry.get().strip()
+        
+        if not self.source_path:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir klasör seçin veya girin!")
+            return
+        
+        # Kaynak klasör var mı kontrol et
+        if not os.path.exists(self.source_path):
+            ConfirmDialog.show_error(self, "Hata", 
+                                    f"Klasör bulunamadı:\n{self.source_path}")
+            return
+        
+        # Mevcut sonuçları temizle
+        for item in self.results_tree.get_children():
+            self.results_tree.delete(item)
+        
+        results = []
+        total_files = 0  # Toplam dosya sayısı
+        
+        # Wildcard kullanılıyor mu kontrol et
+        has_wildcard = '*' in search_term or '?' in search_term
+        
+        if self.subfolders_var.get():
+            # Alt klasörlerle birlikte ara
+            if has_wildcard:
+                # Wildcard ile arama
+                search_pattern = os.path.join(self.source_path, '**', search_term)
+                files = glob.glob(search_pattern, recursive=True)
+                
+                # Toplam dosya sayısını say (tüm dosyaları say)
+                for root, dirs, filenames in os.walk(self.source_path):
+                    total_files += len(filenames)
+            else:
+                # İçinde kelime geçen tüm dosyalar
+                files = []
+                for root, dirs, filenames in os.walk(self.source_path):
+                    total_files += len(filenames)  # Tüm dosyaları say
+                    for filename in filenames:
+                        if search_term.lower() in filename.lower():
+                            files.append(os.path.join(root, filename))
+        else:
+            # Sadece kaynak klasörde ara
+            if has_wildcard:
+                # Wildcard ile arama
+                search_pattern = os.path.join(self.source_path, search_term)
+                files = glob.glob(search_pattern)
+                
+                # Toplam dosya sayısını say
+                if os.path.exists(self.source_path):
+                    total_files = sum(1 for f in os.listdir(self.source_path) 
+                                     if os.path.isfile(os.path.join(self.source_path, f)))
+            else:
+                # İçinde kelime geçen dosyalar
+                files = []
+                if os.path.exists(self.source_path):
+                    for filename in os.listdir(self.source_path):
+                        filepath = os.path.join(self.source_path, filename)
+                        if os.path.isfile(filepath):
+                            total_files += 1  # Tüm dosyaları say
+                            if search_term.lower() in filename.lower():
+                                files.append(filepath)
+        
+        # Sonuçları işle
+        for filepath in files:
+            if os.path.isfile(filepath):
+                filename = os.path.basename(filepath)
+                folder = os.path.dirname(filepath)
+                size = os.path.getsize(filepath)
+                size_str = self._format_size(size)
+                
+                results.append((filename, folder, size_str, filepath))
+        
+        # Sonuçları treeview'e ekle (dosya adına göre sırala)
+        results.sort(key=lambda x: x[0].lower())
+        
+        for filename, folder, size_str, filepath in results:
+            # filepath'i tag olarak sakla
+            self.results_tree.insert('', 'end', 
+                                    values=(filename, folder, size_str),
+                                    tags=(filepath,))
+        
+        # Sonuç sayısını güncelle - toplam dosya sayısı ile birlikte
+        if total_files > 0:
+            self.result_label.configure(
+                text=f"Sonuç: {len(results)} dosya (toplam {total_files} dosyadan)"
+            )
+        else:
+            self.result_label.configure(text=f"Sonuç: {len(results)} dosya")
+    
+    def _format_size(self, size: int) -> str:
+        """Dosya boyutunu formatla"""
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} PB"
+    
+    def _open_file(self, event=None):
+        """Seçili dosyayı Windows gezgininde aç"""
+        import subprocess
+        import os
+        
+        selection = self.results_tree.selection()
+        if not selection:
+            print("DEBUG: Hiçbir satır seçilmedi")
+            if event is None:  # Düğmeye basıldıysa uyarı göster
+                ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        item = selection[0]
+        values = self.results_tree.item(item, 'values')
+        tags = self.results_tree.item(item, 'tags')
+        
+        print(f"DEBUG: Seçili item değerleri: {values}")
+        print(f"DEBUG: Seçili item tags: {tags}")
+        
+        if tags and len(tags) > 0:
+            filepath = tags[0]
+            print(f"DEBUG: Dosya yolu (tag'den): {filepath}")
+            print(f"DEBUG: Dosya var mı: {os.path.exists(filepath)}")
+            print(f"DEBUG: Dosya mı: {os.path.isfile(filepath)}")
+            
+            # Windows gezgininde dosyayı seçili olarak aç
+            try:
+                # Yolu normalize et
+                filepath = os.path.normpath(filepath)
+                print(f"DEBUG: Normalize edilmiş yol: {filepath}")
+                
+                # explorer komutu
+                cmd = ['explorer', '/select,', filepath]
+                print(f"DEBUG: Çalıştırılacak komut: {cmd}")
+                
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                print(f"DEBUG: Komut sonucu - Return code: {result.returncode}")
+                print(f"DEBUG: Stdout: {result.stdout}")
+                print(f"DEBUG: Stderr: {result.stderr}")
+            except Exception as e:
+                print(f"DEBUG: Hata oluştu: {e}")
+                ConfirmDialog.show_error(self, "Hata", f"Dosya açılamadı:\n{str(e)}")
+        else:
+            print("DEBUG: Tag bulunamadı!")
+    
+    @staticmethod
+    def show(parent, source_path: str, include_subfolders: bool = True):
+        """Dialog'u göster"""
+        dialog = SourceSearchDialog(parent, source_path, include_subfolders)
+        dialog.wait_window()

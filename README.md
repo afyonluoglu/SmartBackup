@@ -60,7 +60,41 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
 - **Kopyala/Yapıştır**: Eşleştirmeleri sağ tık menüsünden kopyalayıp başka projelere yapıştırabilirsiniz
 - **Çoğaltma**: Mevcut eşleştirmeleri hızlıca çoğaltabilirsiniz
 - **Klasör Erişimi**: Sağ tık ile kaynak, hedef veya revision klasörlerini doğrudan açabilirsiniz
+- **Kaynak Klasörde Ara**: Eşleştirme üzerinde sağ tık yaparak kaynak klasörde dosya arama yapabilirsiniz
 - **Splitter Paneli**: Eşleştirme listesi ile yedekleme detayları arasında ayarlanabilir splitter
+
+### 🔎 Dosya Arama Özelliği
+
+![Dosya Arama](screenshots/12-file-search.png)
+
+Smart Backup'ın güçlü dosya arama özelliği ile:
+
+#### Kullanım Yöntemleri:
+1. **Eşleştirme Üzerinden Arama**:
+   - Eşleştirme listesinde bir satıra sağ tık yapın
+   - "Kaynak Klasörde Ara" seçeneğini seçin
+   - Arama penceresi otomatik olarak kaynak klasörü yükler
+
+2. **Genel Klasör Aramasi**:
+   - Ana ekranda "Klasörde Ara" düğmesine tıklayın
+   - "Gözat..." ile istediğiniz klasörü seçin
+   - Herhangi bir klasörde arama yapabilirsiniz
+
+#### Arama Özellikleri:
+- **Wildcard Desteği**: `*.txt`, `test*.py`, `*2024*.docx` gibi kalıplar kullanabilirsiniz
+- **Kısmi Eşleşme**: Wildcard kullanmazsanız, içinde arama kelimesi geçen tüm dosyalar bulunur
+- **Alt Klasör Kontrolü**: Alt klasörleri dahil etme/hariç tutma seçeneği
+- **Detaylı Sonuçlar**: Dosya adı, klasör yolu ve boyut bilgisi gösterilir
+- **İstatistikler**: Bulunan dosya sayısı ve toplam taranan dosya sayısı gösterilir
+- **Hızlı Erişim**: 
+  - Sonuçlarda bir dosyaya çift tıklayarak Windows gezgininde açabilirsiniz
+  - Veya "Göster" düğmesine tıklayarak seçili dosyayı gösterebilirsiniz
+
+#### Örnek Aramalar:
+- `*.pdf` - Tüm PDF dosyalarını bul
+- `rapor` - İsminde "rapor" geçen tüm dosyaları bul
+- `2024*.xlsx` - 2024 ile başlayan tüm Excel dosyalarını bul
+- `test?.txt` - test1.txt, test2.txt gibi dosyaları bul
 
 ### 🔍 Gelişmiş Analiz
 
@@ -163,11 +197,11 @@ Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız va
 
 > **Not:** Dosya geçmişi yalnızca daha önce yedekleme sırasında arşivlenmiş dosyalar için kullanılabilir. Yeni eklenen veya hiç güncellenmemiş dosyaların revision kaydı olmaz.
 
-### 🔍 Dosya Arama (Yeni Özellik)
+### 🔍 Dosya Arama
 
 Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
 
-![Dosya Arama](screenshots/11-dosya-arama.png)
+![Dosya Arama](screenshots/11-history-search.png)
 
 #### Arama Özellikleri
 
@@ -213,6 +247,13 @@ Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanı
 | `*backup*` | Adında "backup" geçen tüm dosyalar |
 
 > **İpucu:** Wildcard kullanmadan arama yaparsanız, girilen kelimeyi içeren tüm dosyalar listelenir. Örneğin "rapor" araması, "rapor.docx", "yillik_rapor.pdf", "rapor_2024.xlsx" gibi tüm dosyaları bulur.
+
+### 🔍 Yedekleme Geçmişinde Arama
+
+Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
+
+![Dosya Arama](screenshots/12-file-search.png)
+
 
 ### 🎨 Kullanıcı Arayüzü
 

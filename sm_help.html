@@ -376,6 +376,21 @@
             color: #6a9955;
         }
 
+        /* Method cards */
+        .method-card {
+            background: var(--card-bg);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .method-card h5 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
         /* Footer */
         footer {
             background: var(--text-color);
@@ -884,9 +899,114 @@
         <!-- Dosya Arama -->
         <section id="dosya-arama">
             <h2>🔎 Dosya Arama <span class="badge badge-new">YENİ</span></h2>
-            <p>Yedekleme geçmişi penceresinde <strong>"🔍 Ara"</strong> butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.</p>
             
-            <h3>Arama Penceresini Açma</h3>
+            <h3>📂 Kaynak Klasörde Arama</h3>
+            <img src="screenshots/12-file-search.png" alt="Kaynak Klasörde Arama" style="max-width: 100%; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            
+            <p>Smart Backup'ın güçlü dosya arama özelliği ile kaynak klasörlerde hızlıca dosya bulabilirsiniz.</p>
+            
+            <h4>Arama Penceresini Açma</h4>
+            <div class="method-card">
+                <h5>Yöntem 1: Eşleştirme Üzerinden</h5>
+                <ol class="steps">
+                    <li>Eşleştirme listesinde bir satıra <strong>sağ tık</strong> yapın</li>
+                    <li><strong>"Kaynak Klasörde Ara"</strong> seçeneğini seçin</li>
+                    <li>Arama penceresi otomatik olarak kaynak klasörü yükler</li>
+                </ol>
+            </div>
+            
+            <div class="method-card" style="margin-top: 15px;">
+                <h5>Yöntem 2: Genel Arama</h5>
+                <ol class="steps">
+                    <li>Ana ekranda <strong>"Klasörde Ara"</strong> düğmesine tıklayın</li>
+                    <li><strong>"Gözat..."</strong> ile istediğiniz klasörü seçin</li>
+                    <li>Herhangi bir klasörde arama yapabilirsiniz</li>
+                </ol>
+            </div>
+            
+            <h4>Arama Özellikleri</h4>
+            <table>
+                <tr>
+                    <th>Özellik</th>
+                    <th>Açıklama</th>
+                </tr>
+                <tr>
+                    <td><strong>Wildcard Desteği</strong></td>
+                    <td><code>*.txt</code>, <code>test*.py</code>, <code>*2024*.docx</code> gibi kalıplar</td>
+                </tr>
+                <tr>
+                    <td><strong>Kısmi Eşleşme</strong></td>
+                    <td>Wildcard kullanmazsan, içinde kelime geçen tüm dosyalar bulunur</td>
+                </tr>
+                <tr>
+                    <td><strong>Alt Klasörler</strong></td>
+                    <td>Alt klasörleri dahil etme/hariç tutma seçeneği</td>
+                </tr>
+                <tr>
+                    <td><strong>İstatistikler</strong></td>
+                    <td>Bulunan dosya sayısı ve toplam taranan dosya sayısı</td>
+                </tr>
+            </table>
+            
+            <h4>Arama Örnekleri</h4>
+            <table>
+                <tr>
+                    <th>Arama Terimi</th>
+                    <th>Sonuç</th>
+                </tr>
+                <tr>
+                    <td><code>*.pdf</code></td>
+                    <td>Tüm PDF dosyalarını bul</td>
+                </tr>
+                <tr>
+                    <td><code>rapor</code></td>
+                    <td>İsminde "rapor" geçen tüm dosyaları bul<br>(rapor.docx, yillik_rapor.pdf, rapor_2024.xlsx)</td>
+                </tr>
+                <tr>
+                    <td><code>2024*.xlsx</code></td>
+                    <td>2024 ile başlayan tüm Excel dosyalarını bul</td>
+                </tr>
+                <tr>
+                    <td><code>test?.txt</code></td>
+                    <td>test1.txt, test2.txt gibi dosyaları bul</td>
+                </tr>
+                <tr>
+                    <td><code>*backup*</code></td>
+                    <td>Adında "backup" geçen tüm dosyaları bul</td>
+                </tr>
+            </table>
+            
+            <h4>Sonuç Bilgileri</h4>
+            <p>Arama sonuçlarında şu bilgiler görüntülenir:</p>
+            <ul>
+                <li><strong>Dosya Adı:</strong> Bulunan dosyanın adı</li>
+                <li><strong>Klasör:</strong> Dosyanın bulunduğu tam yol</li>
+                <li><strong>Boyut:</strong> Dosya boyutu (B, KB, MB, GB olarak)</li>
+            </ul>
+            
+            <div class="info">
+                <span class="info-icon">📊</span>
+                <div>
+                    <strong>İstatistik Gösterimi:</strong> Örneğin "Sonuç: 15 dosya (toplam 234 dosyadan)" 
+                    şeklinde hem bulunan hem de taranan toplam dosya sayısı gösterilir.
+                </div>
+            </div>
+            
+            <h4>Dosyayı Açma</h4>
+            <ul>
+                <li><strong>Çift Tıklama:</strong> Sonuç listesinde bir dosyaya çift tıklayarak Windows gezgininde açabilirsiniz</li>
+                <li><strong>"Göster" Düğmesi:</strong> Seçili dosyayı Windows gezgininde gösterir</li>
+            </ul>
+            
+            
+            <hr style="margin: 40px 0; border: none; border-top: 2px solid var(--border-color);">
+            
+            <h3>📚 Yedekleme Geçmişinde Arama</h3>
+            <img src="screenshots/11-history-search.png" alt="Yedekleme Geçmişini Arama" style="max-width: 100%; border-radius: 8px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+
+            <p>Yedekleme geçmişi penceresinde <strong>"🔍 Ara"</strong> butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz. Böylece bir dosyanın geçmiş versiyonlarının listesine erişebilirsiniz</p>
+            
+            <h4>Arama Penceresini Açma</h4>
             <ol class="steps">
                 <li><strong>"Geçmiş"</strong> butonuna tıklayarak yedekleme geçmişi penceresini açın</li>
                 <li>Alt kısımdaki <strong>"🔍 Ara"</strong> butonuna tıklayın</li>

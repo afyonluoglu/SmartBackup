@@ -23,7 +23,7 @@ import os
 from sm_database import DatabaseManager
 from sm_settings import SettingsManager
 from sm_backup_engine import BackupEngine
-from sm_ui_components import ConfirmDialog
+from sm_ui_components import ConfirmDialog, SourceSearchDialog
 
 # Mixin modülleri
 from sm_project_mixin import ProjectMixin
@@ -294,6 +294,7 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
         self.mapping_context_menu.add_command(label="Çoğalt", command=self._duplicate_mapping)
         self.mapping_context_menu.add_command(label="Kopyala", command=self._copy_mapping)
         self.mapping_context_menu.add_separator()
+        self.mapping_context_menu.add_command(label="Kaynak Klasörde Ara", command=self._search_in_source)
         self.mapping_context_menu.add_command(label="Kaynak Klasörü Aç", command=self._open_source_folder)
         self.mapping_context_menu.add_command(label="Hedef Klasörü Aç", command=self._open_target_folder)
         self.mapping_context_menu.add_command(label="Revision'ları Aç", command=self._open_revisions_folder)
@@ -350,6 +351,11 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
         
         ctk.CTkButton(action_frame, text="Geçmiş",
                      command=self._show_history, width=100).pack(side="left", padx=(0, 5))
+        
+        # Klasörde Ara butonu
+        ctk.CTkButton(action_frame, text="Klasörde Ara",
+                     command=self._search_in_folder, width=120,
+                     fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=(0, 5))
         
         # Detayları Kaydet butonu - yedekleme tamamlandığında görünür olacak
         self.save_details_btn = ctk.CTkButton(action_frame, text="Detayları Kaydet",
@@ -558,6 +564,11 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
             webbrowser.open(f"file:///{help_file}")
         else:
             ConfirmDialog.show_warning(self, "Hata", f"Yardım dosyası bulunamadı:\n{help_file}")
+    
+    def _search_in_folder(self):
+        """Herhangi bir klasörde dosya ara"""
+        # Arama dialog'unu aç (source_path None ile)
+        SourceSearchDialog.show(self, source_path=None, include_subfolders=True)
     
     def quit(self):
         """Uygulamadan çık"""
