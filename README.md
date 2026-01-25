@@ -201,7 +201,7 @@ Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız va
 
 Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
 
-![Dosya Arama](screenshots/11-history-search.png)
+![Dosya Arama](screenshots/12-file-search.png)
 
 #### Arama Özellikleri
 
@@ -252,7 +252,7 @@ Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanı
 
 Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
 
-![Dosya Arama](screenshots/12-file-search.png)
+![Dosya Arama](screenshots/11-history-search.png)
 
 
 ### 🎨 Kullanıcı Arayüzü
