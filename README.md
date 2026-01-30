@@ -199,7 +199,7 @@ Diyelim ki `rapor.docx` dosyasının 3 gün önceki versiyonuna ihtiyacınız va
 
 ### 🔍 Yedekleme Geçmişinde Dosya Arama
 
-Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar arasında arama yapabilirsiniz.
+Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanındaki tüm yedeklenmiş dosyalar ve revizyonları arasında arama yapabilirsiniz.
 
 ![Dosya Arama](screenshots/11-history-search.png)
 
@@ -317,6 +317,8 @@ Standart kütüphaneler (kurulum gerektirmez):
    ```bash
    pip install customtkinter
    ```
+** Python'u ilk kez kurduysanız ve bilgisayarınızda pip komutu çalışmıyorsa, windows ortam değişkenlerinden pip.exe dosyasının bulunduğu klasörün PATH değişkeninde tanımlı olduğunu kontrol edin. (pip.exe, genelde Python'u kurduğunuz klasörün altındaki SCRIPTS klasörünün içindedir. Bu klasörü "ortam değişkenleri" sayfasında PATH bölümüne ilave etmeniz yeterli olacaktır.)
+
 4. Ana programı çalıştırın:
    ```bash
    python sm_main.py
