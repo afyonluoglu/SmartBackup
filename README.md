@@ -43,8 +43,8 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
 ## Kurulum
 
 1. Python'un bilgisayarınızda kurulu olduğu varsayılmıştır. Eğer yüklü değilse https://www.python.org/downloads/ adresinden indirin ve bilgisayarınıza kurun. 
-- ⚠️Kurulumdan sonra windows `Ortam Değişkenleri` bölümündeki PATH tablosunda, python'u kurduğunuz yerin, tablonun en üstünde olduğuna kontrol edin.
-2. Tüm proje dosyalarını bir klasöre kopyalayın
+- ⚠️Kurulumdan sonra windows `Ortam Değişkenleri` bölümündeki PATH tablosunda, python'u kurduğunuz yerin, tablonun en üstünde olduğunu kontrol edin.
+2. Tüm proje dosyalarını bir klasöre kopyalayın.
 3. Gerekli kütüphaneyi yükleyin:
    ```bash
    pip install customtkinter
