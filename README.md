@@ -48,9 +48,9 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
    ```bash
    pip install customtkinter
    ```
-** Python'u ilk kez kurduysanız ve bilgisayarınızda `pip` komutu çalışmıyorsa, windows **ortam değişkenleri** bölümünden `pip.exe` dosyasının bulunduğu klasörün `PATH` değişkeninde tanımlı olduğunu kontrol edin. (pip.exe, genelde Python'u kurduğunuz klasörün altındaki `SCRIPTS` klasörünün içindedir. Bu klasörü "ortam değişkenleri" sayfasında PATH bölümüne ilave etmeniz yeterli olacaktır.)
+✅ Python'u ilk kez kurduysanız ve bilgisayarınızda `pip` komutu çalışmıyorsa, windows **ortam değişkenleri** bölümünden `pip.exe` dosyasının bulunduğu klasörün `PATH` değişkeninde tanımlı olduğunu kontrol edin. (pip.exe, genelde Python'u kurduğunuz klasörün altındaki `SCRIPTS` klasörünün içindedir. Bu klasörü "ortam değişkenleri" sayfasında PATH bölümüne ilave etmeniz yeterli olacaktır.)
 
-** python programının bilgisayarda nerede kurulu olduğunu:
+✅ python programının bilgisayarda nerede kurulu olduğunu:
    ```bash
    where python 
    ```
