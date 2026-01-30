@@ -39,6 +39,31 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
 
 ---
 
+
+## Kurulum
+
+1. Python'un bilgisayarınızda kurulu olduğu varsayılmıştır. Eğer yüklü değilse https://www.python.org/downloads/ adresinden indirin ve bilgisayarınıza kurun. 
+2. Tüm proje dosyalarını bir klasöre kopyalayın
+3. Gerekli kütüphaneyi yükleyin:
+   ```bash
+   pip install customtkinter
+   ```
+** Python'u ilk kez kurduysanız ve bilgisayarınızda pip komutu çalışmıyorsa, windows ortam değişkenlerinden pip.exe dosyasının bulunduğu klasörün PATH değişkeninde tanımlı olduğunu kontrol edin. (pip.exe, genelde Python'u kurduğunuz klasörün altındaki SCRIPTS klasörünün içindedir. Bu klasörü "ortam değişkenleri" sayfasında PATH bölümüne ilave etmeniz yeterli olacaktır.)
+
+** python programının bilgisayarda nerede kurulu olduğunu:
+   ```bash
+   where python 
+   ```
+komutu ile öğrenebilirsiniz.
+
+4. Ana programı çalıştırın:
+   ```bash
+   python sm_main.py
+   ```
+   
+---
+
+
 ## Özellikler
 
 ### 🎯 Temel Özellikler
@@ -309,27 +334,6 @@ Standart kütüphaneler (kurulum gerektirmez):
 
 ---
 
-## Kurulum
-
-1. Python'un bilgisayarınızda kurulu olduğu varsayılmıştır. Eğer yüklü değilse https://www.python.org/downloads/ adresinden indirin ve bilgisayarınıza kurun. 
-2. Tüm proje dosyalarını bir klasöre kopyalayın
-3. Gerekli kütüphaneyi yükleyin:
-   ```bash
-   pip install customtkinter
-   ```
-** Python'u ilk kez kurduysanız ve bilgisayarınızda pip komutu çalışmıyorsa, windows ortam değişkenlerinden pip.exe dosyasının bulunduğu klasörün PATH değişkeninde tanımlı olduğunu kontrol edin. (pip.exe, genelde Python'u kurduğunuz klasörün altındaki SCRIPTS klasörünün içindedir. Bu klasörü "ortam değişkenleri" sayfasında PATH bölümüne ilave etmeniz yeterli olacaktır.)
-** python programının bilgisayarda nerede kurulu olduğunu:
-   ```bash
-   where python 
-   ```
-komutu ile öğrenebilirsiniz.
-
-4. Ana programı çalıştırın:
-   ```bash
-   python sm_main.py
-   ```
-   
----
 
 ## Dosya Yapısı
 
