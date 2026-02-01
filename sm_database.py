@@ -508,7 +508,7 @@ class DatabaseManager:
         """
         self.cursor.execute('''
             SELECT bfd.backup_id, bfd.file_size, bfd.backup_reason, bfd.mapping_id,
-                   bh.backup_date, m.target_path
+                   bh.backup_date, m.source_path, m.target_path
             FROM backup_file_details bfd
             JOIN backup_history bh ON bfd.backup_id = bh.id
             LEFT JOIN mappings m ON bfd.mapping_id = m.id

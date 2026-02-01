@@ -1106,9 +1106,20 @@ class FileHistoryWindow(ctk.CTkToplevel):
             # Hedef yol - kayıttaki target_path veya varsayılan target_path kullan
             target_path = record.get('target_path') or self.target_path
             
-            # Dosyanın hedef klasöre göre göreli yolunu hesapla
+            # Kaynak yol - kayıttaki source_path'i kullan
+            source_path = record.get('source_path') or ''
+            
+            # Dosyanın kaynak klasöre göre göreli yolunu hesapla
+            # (Alt klasörlerin doğru belirlenmesi için source_path kullanılmalı)
             relative_path = ""
-            if self.file_path.startswith(target_path):
+            source_path_norm = os.path.normpath(source_path) if source_path else ''
+            file_path_norm = os.path.normpath(self.file_path)
+            
+            if source_path_norm and file_path_norm.lower().startswith(source_path_norm.lower()):
+                # Kaynak yoldan sonraki kısmı al (alt klasörler)
+                relative_path = file_path_norm[len(source_path_norm):].lstrip('\\/')
+            elif file_path_norm.lower().startswith(os.path.normpath(target_path).lower()):
+                # Eski davranış: target_path ile karşılaştır (geriye uyumluluk)
                 relative_path = os.path.relpath(self.file_path, target_path)
                 if relative_path == ".":
                     relative_path = ""
