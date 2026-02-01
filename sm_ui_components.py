@@ -863,7 +863,7 @@ class SourceSearchDialog(ctk.CTkToplevel):
         # Sıralama durumu: {'column': str, 'reverse': bool}
         self.sort_state = {'column': None, 'reverse': False}
         
-        width = 1000
+        width = 1100
         height = 600
         x = (self.winfo_screenwidth() // 2) - (width // 2)
         y = (self.winfo_screenheight() // 2) - (height // 2)
@@ -977,10 +977,10 @@ class SourceSearchDialog(ctk.CTkToplevel):
                                      command=lambda c=col: self._sort_by_column(c))
         
         # Sütun genişlikleri
-        self.results_tree.column("Dosya Adı", width=250)
-        self.results_tree.column("Klasör", width=400)
-        self.results_tree.column("Tarih", width=150, anchor="center")
-        self.results_tree.column("Boyut", width=100, anchor="e")
+        self.results_tree.column("Dosya Adı", width=580, stretch=False)
+        self.results_tree.column("Klasör", width=600, stretch=False)
+        self.results_tree.column("Tarih", width=180, anchor="center", stretch=False)
+        self.results_tree.column("Boyut", width=140, anchor="e", stretch=False)
         
         # Scrollbar yapılandırması
         vsb.config(command=self.results_tree.yview)

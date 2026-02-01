@@ -1181,7 +1181,7 @@ class FileSearchWindow(ctk.CTkToplevel):
         self.search_results = []  # Arama sonuçlarını sakla
         
         self.title("Dosya Arama")
-        self.geometry("1100x700+150+50")
+        self.geometry("1150x700+150+50")
         
         # ESC tuşu ile kapat
         self.bind('<Escape>', lambda e: self.destroy())
@@ -1247,7 +1247,8 @@ class FileSearchWindow(ctk.CTkToplevel):
         # Treeview frame
         tree_frame = ctk.CTkFrame(main_frame)
         tree_frame.pack(fill="both", expand=True, pady=(0, 15))
-        
+        tree_frame.pack_propagate(False)
+
         # Scrollbar'lar
         vsb = ttk.Scrollbar(tree_frame, orient="vertical")
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
@@ -1267,11 +1268,11 @@ class FileSearchWindow(ctk.CTkToplevel):
         self.tree.heading("İşlem", text="İşlem Türü", command=lambda: self._sort_column("İşlem"))
         
         # Sütun genişlikleri
-        self.tree.column("Tarih", width=160, stretch=False, anchor="center")
-        self.tree.column("Dosya Adı", width=250, stretch=False)
-        self.tree.column("Boyut", width=100, stretch=False, anchor="center")
-        self.tree.column("Dizin", width=450, stretch=True)
-        self.tree.column("İşlem", width=120, stretch=False, anchor="center")
+        self.tree.column("Tarih", width=200, stretch=False, anchor="center")
+        self.tree.column("Dosya Adı", width=450, stretch=False, anchor="w")
+        self.tree.column("Boyut", width=150, stretch=False, anchor="center")
+        self.tree.column("Dizin", width=650, stretch=False, anchor="w")
+        self.tree.column("İşlem", width=140, stretch=False, anchor="center")
         
         # Scrollbar yapılandırması
         vsb.config(command=self.tree.yview)
