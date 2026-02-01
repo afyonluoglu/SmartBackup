@@ -121,7 +121,7 @@ class ProjectMixin:
     
     def _add_project(self):
         """Yeni proje ekle"""
-        dialog = ProjectDialog(self, "Yeni Proje")
+        dialog = ProjectDialog(self, "Yeni Paket")
         self.wait_window(dialog)
         
         if dialog.result:

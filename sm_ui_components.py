@@ -15,7 +15,7 @@ from typing import Callable, Optional
 class ProjectDialog(ctk.CTkToplevel):
     """Proje ekleme/düzenleme dialog'u"""
     
-    def __init__(self, parent, title: str = "Yeni Proje", 
+    def __init__(self, parent, title: str = "Yeni Yedekleme Paketi", 
                  project_name: str = "", project_desc: str = ""):
         super().__init__(parent)
         
@@ -48,15 +48,15 @@ class ProjectDialog(ctk.CTkToplevel):
         main_frame = ctk.CTkFrame(self)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        # Proje adı
-        ctk.CTkLabel(main_frame, text="Proje Adı:", anchor="w").pack(fill="x", pady=(0, 5))
-        self.name_entry = ctk.CTkEntry(main_frame, placeholder_text="Projeye bir ad verin")
+        # Paket adı
+        ctk.CTkLabel(main_frame, text="Paket Adı:", anchor="w").pack(fill="x", pady=(0, 5))
+        self.name_entry = ctk.CTkEntry(main_frame, placeholder_text="Yedekleme paketine bir ad verin")
         self.name_entry.pack(fill="x", pady=(0, 15))
         self.name_entry.insert(0, project_name)
         self.name_entry.focus()
         
         # Açıklama
-        ctk.CTkLabel(main_frame, text="Açıklama:", anchor="w").pack(fill="x", pady=(0, 5))
+        ctk.CTkLabel(main_frame, text="Paket Açıklaması:", anchor="w").pack(fill="x", pady=(0, 5))
         self.desc_entry = ctk.CTkTextbox(main_frame, height=80)
         self.desc_entry.pack(fill="both", expand=True, pady=(0, 15))
         if project_desc:
@@ -725,6 +725,15 @@ class BackupSelectionDialog:
             )
             mirror_cb.pack(pady=5)
         
+        # Detayları Kaydet checkbox - yedekleme sonrası otomatik kaydet
+        self.auto_save_details_var = ctk.BooleanVar(value=True)
+        auto_save_cb = ctk.CTkCheckBox(
+            options_frame,
+            text="Yedekleme Sonrası Detayları Kaydet",
+            variable=self.auto_save_details_var
+        )
+        auto_save_cb.pack(pady=5)
+        
         # Butonlar
         button_frame = ctk.CTkFrame(main_frame)
         button_frame.pack(fill="x")
@@ -802,7 +811,8 @@ class BackupSelectionDialog:
         self.result = {
             'mappings': selected,
             'backup_hidden_files': self.backup_hidden_files_var.get(),
-            'mirror_deletions': self.mirror_deletions_var.get()
+            'mirror_deletions': self.mirror_deletions_var.get(),
+            'auto_save_details': self.auto_save_details_var.get()
         }
         self.dialog.destroy()
     

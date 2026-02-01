@@ -119,14 +119,14 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
         project_header = ctk.CTkFrame(left_panel, fg_color="transparent")
         project_header.pack(fill="x", pady=(0, 10))
         
-        ctk.CTkLabel(project_header, text="Projeler", 
+        ctk.CTkLabel(project_header, text="Yedekleme Paketleri", 
                     font=("", 16, "bold")).pack(side="left")
         
         # Proje butonları
         project_buttons = ctk.CTkFrame(left_panel, fg_color="transparent")
         project_buttons.pack(fill="x", pady=(0, 10))
         
-        ctk.CTkButton(project_buttons, text="Yeni Proje", 
+        ctk.CTkButton(project_buttons, text="Yeni Paket", 
                      command=self._add_project, width=90).pack(side="left", padx=(0, 5))
         ctk.CTkButton(project_buttons, text="Düzenle", 
                      command=self._edit_project, width=80).pack(side="left", padx=(0, 5))
@@ -148,10 +148,10 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
                                         foreground="white", 
                                         activebackground="#1F6AA5"
                                          )
-        self.project_context_menu.add_command(label="Proje Düzenle", command=self._edit_project)
-        self.project_context_menu.add_command(label="Proje Sil", command=self._delete_project)
+        self.project_context_menu.add_command(label="Paket Düzenle", command=self._edit_project)
+        self.project_context_menu.add_command(label="Paket Sil", command=self._delete_project)
         self.project_context_menu.add_separator()
-        self.project_context_menu.add_command(label="Proje Çoğalt", command=self._duplicate_project)
+        self.project_context_menu.add_command(label="Paket Çoğalt", command=self._duplicate_project)
 
         list_font = ("Segoe UI", 13) 
         self.project_context_menu.config(font=list_font)    

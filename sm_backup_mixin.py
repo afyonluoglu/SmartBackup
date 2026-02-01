@@ -527,6 +527,7 @@ class BackupMixin:
         selected_mapping_ids = result['mappings']
         backup_hidden_files = result.get('backup_hidden_files', False)
         mirror_deletions = result.get('mirror_deletions', False)
+        auto_save_details = result.get('auto_save_details', False)
         
         # Seçili mapping'leri filtrele
         selected_mappings = [m for m in mappings if m['id'] in selected_mapping_ids]
@@ -832,8 +833,13 @@ class BackupMixin:
                       f"Süre: {duration:.1f} saniye")
                 self.after(0, lambda: ConfirmDialog.show_info(self, "Başarılı", msg))
                 
-                # Yedekleme başarılı --> detay kaydetme butonunu göster
-                self.after(0, lambda bid=backup_id: self._show_save_details_button(bid))
+                # Yedekleme başarılı --> detay kaydetme butonunu göster veya otomatik kaydet
+                if auto_save_details:
+                    # Otomatik detay kaydetme
+                    self.after(0, lambda bid=backup_id: self._auto_save_backup_details(bid))
+                else:
+                    # Manuel kaydetme için butonu göster
+                    self.after(0, lambda bid=backup_id: self._show_save_details_button(bid))
             else:
                 # İptal edildiğinde de bilgi göster
                 self.after(0, lambda: ConfirmDialog.show_info(self, "İptal Edildi", "Yedekleme işlemi kullanıcı tarafından iptal edildi."))
@@ -928,6 +934,62 @@ class BackupMixin:
                                    f"{len(file_details)} dosyanın detayları başarıyla kaydedildi.")
         except Exception as e:
             ConfirmDialog.show_error(self, "Hata", f"Detaylar kaydedilemedi: {str(e)}")
+    
+    def _auto_save_backup_details(self, backup_id: int):
+        """Yedekleme tamamlandığında dosya detaylarını otomatik kaydet"""
+        self.last_backup_id = backup_id
+        
+        if not self.analysis_results:
+            self._log_write("⚠️ Otomatik detay kaydetme: Analiz sonuçları bulunamadı!", "#FFA500")
+            return
+        
+        # Tüm yedeklenen dosyaları topla
+        file_details = []
+        for mapping_id, result in self.analysis_results.items():
+            files_to_backup = result.get('files_to_backup', [])
+            for file_info in files_to_backup:
+                if isinstance(file_info, dict):
+                    file_path = file_info.get('path', '')
+                    file_size = file_info.get('size', 0)
+                    reason = file_info.get('reason', 'bilinmiyor')
+                else:
+                    # Eski format uyumluluğu
+                    file_path = file_info
+                    file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+                    reason = 'bilinmiyor'
+                
+                # Dosya adını yoldan ayır
+                file_name = os.path.basename(file_path)
+                file_dir = os.path.dirname(file_path)
+                
+                # Önceki yedeklerdeki boyutu bul
+                previous_size = self.db.get_previous_file_size(file_dir, file_name, backup_id)
+                
+                file_details.append({
+                    'mapping_id': mapping_id,
+                    'file_path': file_dir,
+                    'file_name': file_name,
+                    'file_size': file_size,
+                    'previous_size': previous_size,
+                    'backup_reason': reason
+                })
+        
+        if not file_details:
+            self._log_write("⚠️ Otomatik detay kaydetme: Kaydedilecek dosya detayı bulunamadı!", "#FFA500")
+            return
+        
+        try:
+            # Veritabanına kaydet
+            self.db.add_backup_file_details(backup_id, file_details)
+            
+            # Log'a bilgi yaz
+            self._log_write(f"✅ Dosya detayları otomatik olarak kaydedildi ({len(file_details)} dosya)", "#65FE65")
+            
+            # Butonu göstermeye gerek yok (zaten kaydedildi)
+            self.last_backup_id = None
+            self.last_backup_files = None
+        except Exception as e:
+            self._log_write(f"❌ Otomatik detay kaydetme hatası: {str(e)}", "#FF0000")
     
     def _show_history(self):
         """Geçmiş penceresini göster"""
