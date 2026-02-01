@@ -107,17 +107,29 @@ Smart Backup'ın güçlü dosya arama özelliği ile:
 
 #### Arama Özellikleri:
 - **Wildcard Desteği**: `*.txt`, `test*.py`, `*2024*.docx` gibi kalıplar kullanabilirsiniz
-- **Kısmi Eşleşme**: Wildcard kullanmazsanız, içinde arama kelimesi geçen tüm dosyalar bulunur
+- **Çoklu Kelime Araması (AND)**: Birden fazla kelime yazarsanız, tüm kelimelerin geçtiği dosyalar bulunur (kelime sırası önemli değil)
+- **Sıralı Kelime Araması**: Kelimeleri `"tırnak içinde"` yazarsanız, kelimeler o sırayla geçen dosyalar bulunur (aralarında başka kelimeler olabilir)
+- **Hariç Tutma (-)**: Bir kelimenin başına `-` koyarsanız, o kelimeyi içermeyen dosyalar listelenir
+- **Türkçe Karakter Desteği**: İ, I, Ş, Ğ, Ü, Ö, Ç gibi Türkçe karakterler için büyük/küçük harf duyarsız arama
 - **Alt Klasör Kontrolü**: Alt klasörleri dahil etme/hariç tutma seçeneği
-- **Detaylı Sonuçlar**: Dosya adı, klasör yolu ve boyut bilgisi gösterilir
+- **Detaylı Sonuçlar**: Dosya adı, klasör yolu, değiştirilme tarihi ve boyut bilgisi gösterilir
+- **Sütun Sıralama**: Sütun başlıklarına tıklayarak listeyi o sütuna göre sıralayabilirsiniz (A-Z veya Z-A)
 - **İstatistikler**: Bulunan dosya sayısı ve toplam taranan dosya sayısı gösterilir
 - **Hızlı Erişim**: 
   - Sonuçlarda bir dosyaya çift tıklayarak Windows gezgininde açabilirsiniz
   - Veya "Göster" düğmesine tıklayarak seçili dosyayı gösterebilirsiniz
+- **Sağ Tık Menüsü**:
+  - **Aç**: Dosyayı Windows'daki varsayılan uygulama ile açar
+  - **Gezginde Göster**: Dosyayı Windows gezgininde seçili olarak gösterir
+- **Yardım Düğmesi (?)**: Arama özelliklerini açıklayan yardım mesajı
 
 #### Örnek Aramalar:
 - `*.pdf` - Tüm PDF dosyalarını bul
 - `rapor` - İsminde "rapor" geçen tüm dosyaları bul
+- `mustafa fatura` - Hem "mustafa" hem "fatura" geçen tüm dosyaları bul (sıra önemli değil)
+- `"mustafa fatura"` - Önce "mustafa" sonra "fatura" geçen dosyaları bul (aralarında başka kelimeler olabilir)
+- `rusça -özet` - "rusça" içeren ama "özet" içermeyen dosyaları bul
+- `izmir` veya `İZMİR` - Türkçe karakter farkı olmadan aynı sonuç
 - `2024*.xlsx` - 2024 ile başlayan tüm Excel dosyalarını bul
 - `test?.txt` - test1.txt, test2.txt gibi dosyaları bul
 
@@ -666,7 +678,7 @@ Tema tercihiniz otomatik olarak kaydedilir ve program bir sonraki açılışta h
 ## Sorun Giderme
 
 ### ❌ Program açılmıyor
-- Python 3.7+ sürümünü kullandığınızdan emin olun
+- Python 3.2+ sürümünü kullandığınızdan emin olun
 - `customtkinter` kütüphanesinin yüklü olduğunu kontrol edin
 
 ### ❌ Veritabanı hatası

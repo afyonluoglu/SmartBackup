@@ -9,7 +9,7 @@ Gerekli Kütüphaneler:
 """
 
 import customtkinter as ctk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, Menu
 from typing import Callable, Optional
 
 class ProjectDialog(ctk.CTkToplevel):
@@ -860,6 +860,9 @@ class SourceSearchDialog(ctk.CTkToplevel):
         self.source_path = source_path
         self.include_subfolders = include_subfolders
         
+        # Sıralama durumu: {'column': str, 'reverse': bool}
+        self.sort_state = {'column': None, 'reverse': False}
+        
         width = 1000
         height = 600
         x = (self.winfo_screenwidth() // 2) - (width // 2)
@@ -918,6 +921,11 @@ class SourceSearchDialog(ctk.CTkToplevel):
         ctk.CTkButton(search_frame, text="Ara", 
                      command=self._search_files, width=100).pack(side="left")
         
+        # Yardım düğmesi
+        ctk.CTkButton(search_frame, text="?", 
+                     command=self._show_search_help, width=30,
+                     fg_color="#555555", hover_color="#666666").pack(side="left", padx=(5, 0))
+        
         # Alt klasörler checkbox
         self.subfolders_var = ctk.BooleanVar(value=self.include_subfolders)
         ctk.CTkCheckBox(search_frame, text="Alt klasörleri dahil et",
@@ -955,7 +963,7 @@ class SourceSearchDialog(ctk.CTkToplevel):
         hsb = ttk.Scrollbar(tree_frame, orient="horizontal")
         
         # Treeview
-        columns = ("Dosya Adı", "Klasör", "Boyut")
+        columns = ("Dosya Adı", "Klasör", "Tarih", "Boyut")
         self.results_tree = ttk.Treeview(tree_frame, 
                                         columns=columns,
                                         show="headings",
@@ -963,14 +971,15 @@ class SourceSearchDialog(ctk.CTkToplevel):
                                         yscrollcommand=vsb.set,
                                         xscrollcommand=hsb.set)
         
-        # Sütun başlıkları
-        self.results_tree.heading("Dosya Adı", text="Dosya Adı")
-        self.results_tree.heading("Klasör", text="Klasör")
-        self.results_tree.heading("Boyut", text="Boyut")
+        # Sütun başlıkları (sıralama için tıklanabilir)
+        for col in columns:
+            self.results_tree.heading(col, text=col, 
+                                     command=lambda c=col: self._sort_by_column(c))
         
         # Sütun genişlikleri
         self.results_tree.column("Dosya Adı", width=250)
-        self.results_tree.column("Klasör", width=500)
+        self.results_tree.column("Klasör", width=400)
+        self.results_tree.column("Tarih", width=150, anchor="center")
         self.results_tree.column("Boyut", width=100, anchor="e")
         
         # Scrollbar yapılandırması
@@ -988,6 +997,18 @@ class SourceSearchDialog(ctk.CTkToplevel):
         # Çift tıklama ile dosya aç
         self.results_tree.bind('<Double-Button-1>', self._open_file)
         
+        # Sağ tık context menüsü
+        self.results_tree.bind('<Button-3>', self._show_context_menu)
+        
+
+        # Context menüsü oluştur
+        self.context_menu = Menu(self.results_tree, tearoff=0)
+        self.context_menu.add_command(label="Aç", command=self._open_file_with_app)
+        self.context_menu.add_command(label="Gezginde Göster", command=lambda: self._open_file(None))
+        
+        list_font = ("Segoe UI", 13) 
+        self.context_menu.config(font=list_font)   
+                
         # Butonlar frame
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         button_frame.pack(fill="x", pady=(10, 0))
@@ -1011,6 +1032,96 @@ class SourceSearchDialog(ctk.CTkToplevel):
             self.folder_entry.delete(0, "end")
             self.folder_entry.insert(0, folder)
             self.source_path = folder
+    
+    def _show_search_help(self):
+        """Arama yardımını göster"""
+        help_text = """Gelişmiş Arama Özellikleri:
+
+• Birden fazla kelime: Tüm kelimelerin geçtiği dosyalar bulunur.
+   Örnek: rusça ders → "dünkü rusça ders özetleri.txt"
+   ve "dersimiz rusça.pdf" bulunur.
+
+• Tırnak içinde arama: Kelimeler yazılan sırayla aranır
+   (aralarında başka kelimeler olabilir).
+   Örnek: "muhit fatura" → "Muhit hoca fatura.pdf" bulunur
+   ama "fatura muhit.pdf" bulunmaz.
+
+• Hariç tutma (-): Belirtilen kelimeyi içermeyen dosyalar.
+   Örnek: rusça -özet → "rusça" içeren ama "özet"
+   içermeyen dosyalar bulunur.
+
+• Wildcard: *.txt, test*.py gibi kalıplar kullanabilirsiniz."""
+        
+        ConfirmDialog.show_info(self, "Arama Yardımı", help_text)
+    
+    def _turkish_lower(self, text: str) -> str:
+        """Türkçe karakterleri düzgün şekilde küçük harfe çevir"""
+        # Türkçe özel karakterler için dönüşüm
+        tr_map = str.maketrans('İIŞĞÜÖÇ', 'iışğüöç')
+        return text.translate(tr_map).lower()
+    
+    def _parse_search_term(self, search_term: str):
+        """
+        Arama terimini ayrıştır.
+        Returns: (exact_phrase, include_words, exclude_words, is_wildcard)
+        """
+        import re
+        
+        search_term = search_term.strip()
+        
+        # Wildcard kontrolü
+        if '*' in search_term or '?' in search_term:
+            return (None, [], [], True)
+        
+        # Tırnak içinde sıralı kelime araması kontrolü
+        if search_term.startswith('"') and search_term.endswith('"') and len(search_term) > 2:
+            phrase_content = search_term[1:-1]  # Tırnakları kaldır
+            ordered_words = phrase_content.split()  # Kelimelere ayır
+            return (ordered_words, [], [], False)  # ordered_words olarak döndür
+        
+        # Kelimeleri ayrıştır
+        words = search_term.split()
+        include_words = []
+        exclude_words = []
+        
+        for word in words:
+            if word.startswith('-') and len(word) > 1:
+                exclude_words.append(self._turkish_lower(word[1:]))  # - işaretini kaldır
+            else:
+                include_words.append(self._turkish_lower(word))
+        
+        return (None, include_words, exclude_words, False)
+    
+    def _matches_search_criteria(self, filename: str, ordered_words, include_words, exclude_words) -> bool:
+        """
+        Dosya adının arama kriterlerine uyup uymadığını kontrol et.
+        ordered_words: Tırnak içinde yazılan kelimelerin sıralı listesi (veya None)
+        """
+        filename_lower = self._turkish_lower(filename)
+        
+        # Sıralı kelime araması kontrolü (tırnak içinde yazılan)
+        if ordered_words:
+            # Tüm kelimelerin bu sırayla geçip geçmediğini kontrol et
+            last_pos = -1
+            for word in ordered_words:
+                word_lower = self._turkish_lower(word)
+                pos = filename_lower.find(word_lower, last_pos + 1)
+                if pos == -1:
+                    return False  # Kelime bulunamadı
+                last_pos = pos
+            return True
+        
+        # Hariç tutulan kelimeleri kontrol et
+        for word in exclude_words:
+            if word in filename_lower:
+                return False
+        
+        # Dahil edilecek tüm kelimelerin varlığını kontrol et (AND mantığı)
+        for word in include_words:
+            if word not in filename_lower:
+                return False
+        
+        return True
     
     def _search_files(self):
         """Arama yap"""
@@ -1042,12 +1153,12 @@ class SourceSearchDialog(ctk.CTkToplevel):
         results = []
         total_files = 0  # Toplam dosya sayısı
         
-        # Wildcard kullanılıyor mu kontrol et
-        has_wildcard = '*' in search_term or '?' in search_term
+        # Arama terimini ayrıştır
+        ordered_words, include_words, exclude_words, is_wildcard = self._parse_search_term(search_term)
         
         if self.subfolders_var.get():
             # Alt klasörlerle birlikte ara
-            if has_wildcard:
+            if is_wildcard:
                 # Wildcard ile arama
                 search_pattern = os.path.join(self.source_path, '**', search_term)
                 files = glob.glob(search_pattern, recursive=True)
@@ -1056,16 +1167,16 @@ class SourceSearchDialog(ctk.CTkToplevel):
                 for root, dirs, filenames in os.walk(self.source_path):
                     total_files += len(filenames)
             else:
-                # İçinde kelime geçen tüm dosyalar
+                # Gelişmiş arama kriterleri ile ara
                 files = []
                 for root, dirs, filenames in os.walk(self.source_path):
                     total_files += len(filenames)  # Tüm dosyaları say
                     for filename in filenames:
-                        if search_term.lower() in filename.lower():
+                        if self._matches_search_criteria(filename, ordered_words, include_words, exclude_words):
                             files.append(os.path.join(root, filename))
         else:
             # Sadece kaynak klasörde ara
-            if has_wildcard:
+            if is_wildcard:
                 # Wildcard ile arama
                 search_pattern = os.path.join(self.source_path, search_term)
                 files = glob.glob(search_pattern)
@@ -1075,14 +1186,14 @@ class SourceSearchDialog(ctk.CTkToplevel):
                     total_files = sum(1 for f in os.listdir(self.source_path) 
                                      if os.path.isfile(os.path.join(self.source_path, f)))
             else:
-                # İçinde kelime geçen dosyalar
+                # Gelişmiş arama kriterleri ile ara
                 files = []
                 if os.path.exists(self.source_path):
                     for filename in os.listdir(self.source_path):
                         filepath = os.path.join(self.source_path, filename)
                         if os.path.isfile(filepath):
                             total_files += 1  # Tüm dosyaları say
-                            if search_term.lower() in filename.lower():
+                            if self._matches_search_criteria(filename, ordered_words, include_words, exclude_words):
                                 files.append(filepath)
         
         # Sonuçları işle
@@ -1092,17 +1203,25 @@ class SourceSearchDialog(ctk.CTkToplevel):
                 folder = os.path.dirname(filepath)
                 size = os.path.getsize(filepath)
                 size_str = self._format_size(size)
+                # Dosya değiştirilme tarihi
+                mtime = os.path.getmtime(filepath)
+                from datetime import datetime
+                date_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
                 
-                results.append((filename, folder, size_str, filepath))
+                results.append((filename, folder, date_str, size_str, filepath, size, mtime))
+        
+        # Sonuçları sakla (sıralama için)
+        self.search_results = results
         
         # Sonuçları treeview'e ekle (dosya adına göre sırala)
         results.sort(key=lambda x: x[0].lower())
+        self.sort_state = {'column': 'Dosya Adı', 'reverse': False}
         
-        for filename, folder, size_str, filepath in results:
-            # filepath'i tag olarak sakla
+        for filename, folder, date_str, size_str, filepath, size, mtime in results:
+            # filepath, size ve mtime'ı tag olarak sakla
             self.results_tree.insert('', 'end', 
-                                    values=(filename, folder, size_str),
-                                    tags=(filepath,))
+                                    values=(filename, folder, date_str, size_str),
+                                    tags=(filepath, str(size), str(mtime)))
         
         # Sonuç sayısını güncelle - toplam dosya sayısı ile birlikte
         if total_files > 0:
@@ -1119,6 +1238,79 @@ class SourceSearchDialog(ctk.CTkToplevel):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} PB"
+    
+    def _sort_by_column(self, column):
+        """Sütuna göre sırala"""
+        # Aynı sütuna tekrar tıklanırsa sıralamayı tersine çevir
+        if self.sort_state['column'] == column:
+            self.sort_state['reverse'] = not self.sort_state['reverse']
+        else:
+            self.sort_state['column'] = column
+            self.sort_state['reverse'] = False
+        
+        # Tüm öğeleri al
+        items = []
+        for item in self.results_tree.get_children():
+            values = self.results_tree.item(item, 'values')
+            tags = self.results_tree.item(item, 'tags')
+            items.append((values, tags))
+        
+        # Sıralama anahtarı belirle
+        if column == 'Dosya Adı':
+            items.sort(key=lambda x: x[0][0].lower(), reverse=self.sort_state['reverse'])
+        elif column == 'Klasör':
+            items.sort(key=lambda x: x[0][1].lower(), reverse=self.sort_state['reverse'])
+        elif column == 'Tarih':
+            # mtime tag'inden al (sayısal sıralama için)
+            items.sort(key=lambda x: float(x[1][2]) if len(x[1]) > 2 else 0, reverse=self.sort_state['reverse'])
+        elif column == 'Boyut':
+            # size tag'inden al (sayısal sıralama için)
+            items.sort(key=lambda x: int(x[1][1]) if len(x[1]) > 1 else 0, reverse=self.sort_state['reverse'])
+        
+        # Treeview'i yeniden doldur
+        for item in self.results_tree.get_children():
+            self.results_tree.delete(item)
+        
+        for values, tags in items:
+            self.results_tree.insert('', 'end', values=values, tags=tags)
+        
+        # Sütun başlığını güncelle (sıralama yönünü göster)
+        for col in ('Dosya Adı', 'Klasör', 'Tarih', 'Boyut'):
+            if col == column:
+                arrow = ' ▼' if self.sort_state['reverse'] else ' ▲'
+                self.results_tree.heading(col, text=col + arrow)
+            else:
+                self.results_tree.heading(col, text=col)
+    
+    def _show_context_menu(self, event):
+        """Sağ tık context menüsünü göster"""
+        # Tıklanan satırı seç
+        item = self.results_tree.identify_row(event.y)
+        if item:
+            self.results_tree.selection_set(item)
+            self.context_menu.post(event.x_root, event.y_root)
+    
+    def _open_file_with_app(self):
+        """Seçili dosyayı varsayılan uygulama ile aç"""
+        import os
+        
+        selection = self.results_tree.selection()
+        if not selection:
+            ConfirmDialog.show_warning(self, "Uyarı", "Lütfen bir dosya seçin!")
+            return
+        
+        item = selection[0]
+        tags = self.results_tree.item(item, 'tags')
+        
+        if tags and len(tags) > 0:
+            filepath = tags[0]
+            if os.path.exists(filepath):
+                try:
+                    os.startfile(filepath)
+                except Exception as e:
+                    ConfirmDialog.show_error(self, "Hata", f"Dosya açılamadı:\n{str(e)}")
+            else:
+                ConfirmDialog.show_error(self, "Hata", f"Dosya bulunamadı:\n{filepath}")
     
     def _open_file(self, event=None):
         """Seçili dosyayı Windows gezgininde aç"""

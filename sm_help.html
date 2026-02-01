@@ -935,16 +935,40 @@
                     <td><code>*.txt</code>, <code>test*.py</code>, <code>*2024*.docx</code> gibi kalıplar</td>
                 </tr>
                 <tr>
-                    <td><strong>Kısmi Eşleşme</strong></td>
-                    <td>Wildcard kullanmazsan, içinde kelime geçen tüm dosyalar bulunur</td>
+                    <td><strong>Çoklu Kelime (AND)</strong></td>
+                    <td>Birden fazla kelime yazarsanız, tüm kelimelerin geçtiği dosyalar bulunur (sıra önemli değil)</td>
+                </tr>
+                <tr>
+                    <td><strong>Sıralı Kelime ("...")</strong></td>
+                    <td>Kelimeleri tırnak içinde yazarsanız, o sırayla geçen dosyalar bulunur (aralarında başka kelimeler olabilir)</td>
+                </tr>
+                <tr>
+                    <td><strong>Hariç Tutma (-)</strong></td>
+                    <td>Bir kelimenin başına <code>-</code> koyarsanız, o kelimeyi içermeyen dosyalar listelenir</td>
+                </tr>
+                <tr>
+                    <td><strong>Türkçe Karakter</strong></td>
+                    <td>İ, I, Ş, Ğ, Ü, Ö, Ç karakterleri için büyük/küçük harf duyarsız arama</td>
                 </tr>
                 <tr>
                     <td><strong>Alt Klasörler</strong></td>
                     <td>Alt klasörleri dahil etme/hariç tutma seçeneği</td>
                 </tr>
                 <tr>
+                    <td><strong>Tarih Sütunu</strong></td>
+                    <td>Dosyaların son değiştirilme tarihi görüntülenir</td>
+                </tr>
+                <tr>
+                    <td><strong>Sıralama</strong></td>
+                    <td>Sütun başlıklarına tıklayarak listeyi sıralayabilirsiniz</td>
+                </tr>
+                <tr>
                     <td><strong>İstatistikler</strong></td>
                     <td>Bulunan dosya sayısı ve toplam taranan dosya sayısı</td>
+                </tr>
+                <tr>
+                    <td><strong>Yardım (?)</strong></td>
+                    <td>Arama özelliklerini açıklayan yardım mesajı</td>
                 </tr>
             </table>
             
@@ -961,6 +985,22 @@
                 <tr>
                     <td><code>rapor</code></td>
                     <td>İsminde "rapor" geçen tüm dosyaları bul<br>(rapor.docx, yillik_rapor.pdf, rapor_2024.xlsx)</td>
+                </tr>
+                <tr>
+                    <td><code>mustafa fatura</code></td>
+                    <td>Hem "mustafa" hem "fatura" içeren dosyalar (sıra önemli değil)<br>(Mustafa hoca fatura.pdf, fatura-mustafa.pdf)</td>
+                </tr>
+                <tr>
+                    <td><code>"mustafa fatura"</code></td>
+                    <td>Önce "mustafa" sonra "fatura" geçen dosyalar<br>(Mustafa hoca fatura.pdf bulunur, fatura-mustafa.pdf bulunmaz)</td>
+                </tr>
+                <tr>
+                    <td><code>rusça -özet</code></td>
+                    <td>"rusça" içeren ama "özet" içermeyen dosyalar</td>
+                </tr>
+                <tr>
+                    <td><code>izmir</code> veya <code>İZMİR</code></td>
+                    <td>Türkçe karakter farkı olmadan aynı sonucu verir</td>
                 </tr>
                 <tr>
                     <td><code>2024*.xlsx</code></td>
@@ -981,7 +1021,16 @@
             <ul>
                 <li><strong>Dosya Adı:</strong> Bulunan dosyanın adı</li>
                 <li><strong>Klasör:</strong> Dosyanın bulunduğu tam yol</li>
+                <li><strong>Tarih:</strong> Dosyanın son değiştirilme tarihi</li>
                 <li><strong>Boyut:</strong> Dosya boyutu (B, KB, MB, GB olarak)</li>
+            </ul>
+            
+            <h4>🔃 Sütun Sıralama</h4>
+            <p>Sonuç listesindeki sütun başlıklarına tıklayarak listeyi istediğiniz sütuna göre sıralayabilirsiniz:</p>
+            <ul>
+                <li>İlk tıklamada <strong>A-Z / eskiden yeniye / küçükten büyüğe</strong> sıralar (▲)</li>
+                <li>İkinci tıklamada <strong>Z-A / yeniden eskiye / büyükten küçüğe</strong> sıralar (▼)</li>
+                <li>Aktif sıralama sütunu başlıkta ok işareti ile gösterilir</li>
             </ul>
             
             <div class="info">
@@ -997,6 +1046,23 @@
                 <li><strong>Çift Tıklama:</strong> Sonuç listesinde bir dosyaya çift tıklayarak Windows gezgininde açabilirsiniz</li>
                 <li><strong>"Göster" Düğmesi:</strong> Seçili dosyayı Windows gezgininde gösterir</li>
             </ul>
+            
+            <h4>🖱️ Sağ Tık Menüsü</h4>
+            <p>Sonuç listesinde bir dosyaya sağ tıkladığınızda aşağıdaki seçenekleri içeren bir menü açılır:</p>
+            <table>
+                <tr>
+                    <th>Seçenek</th>
+                    <th>Açıklama</th>
+                </tr>
+                <tr>
+                    <td><strong>Aç</strong></td>
+                    <td>Dosyayı Windows'daki varsayılan uygulama ile açar (örn: .docx → Word, .pdf → PDF Reader)</td>
+                </tr>
+                <tr>
+                    <td><strong>Gezginde Göster</strong></td>
+                    <td>Dosyayı Windows gezgininde seçili olarak gösterir</td>
+                </tr>
+            </table>
             
             
             <hr style="margin: 40px 0; border: none; border-top: 2px solid var(--border-color);">
