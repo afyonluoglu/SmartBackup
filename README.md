@@ -42,7 +42,7 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
 
 ## Kurulum
 
-⚠️ Windows installer ile programın doğrudan çalışan şeklini istediğiniz bir yere kurmak için `SmartBackupInstall.exe` dosyasını çalıştırnaız yeterlidir.
+⚠️ Windows installer ile programın doğrudan çalışan şeklini istediğiniz bir yere kurmak için `SmartBackupInstall.exe` dosyasını çalıştırnanız yeterlidir.
 
 
 1. Python'un bilgisayarınızda kurulu olduğu varsayılmıştır. Eğer yüklü değilse https://www.python.org/downloads/ adresinden indirin ve bilgisayarınıza kurun. 
