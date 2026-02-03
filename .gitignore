@@ -25,10 +25,6 @@ build/
 *$py.class
 *.so
 
-# Executable files
-*.exe
-*.spec
-
 # Batch and Backup files 
 *.bat
 *.zip
