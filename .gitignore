@@ -11,8 +11,16 @@ project plan-*
 # URL files
 *.url
 
-# Compiled Python files
+# Install Files
 __pycache__/
+dist/
+build/
+*.spec
+*.iss
+*.cfg
+*.ico
+
+# Python bytecode files
 *.py[cod]
 *$py.class
 *.so

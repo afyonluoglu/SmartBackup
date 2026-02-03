@@ -1226,7 +1226,7 @@ class SourceSearchDialog(ctk.CTkToplevel):
         # Sonuç sayısını güncelle - toplam dosya sayısı ile birlikte
         if total_files > 0:
             self.result_label.configure(
-                text=f"Sonuç: {len(results)} dosya (toplam {total_files} dosyadan)"
+                text=f"Sonuç: {len(results)} dosya (toplam {total_files:,} dosyadan)"
             )
         else:
             self.result_label.configure(text=f"Sonuç: {len(results)} dosya")

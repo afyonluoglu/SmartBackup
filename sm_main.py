@@ -30,6 +30,8 @@ from sm_project_mixin import ProjectMixin
 from sm_mapping_mixin import MappingMixin
 from sm_backup_mixin import BackupMixin
 
+# import sys
+# print(sys.executable)
 
 class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
     """Smart Backup Ana Uygulama"""

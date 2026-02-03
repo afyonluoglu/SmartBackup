@@ -153,6 +153,34 @@ class BackupEngine:
                         # Bu her seviyedeki __pycache__ klasörlerini bulur
                         full_pattern = os.path.join(source_path, '**', pattern)
                         matched = glob.glob(full_pattern, recursive=True)
+                        
+                        # Kaynak klasörün doğrudan altındaki eşleşmeleri de ekle
+                        # Örnek: "build\*.*" -> "source_path\build\*.*"
+                        direct_pattern = os.path.join(source_path, pattern)
+                        matched_direct = glob.glob(direct_pattern, recursive=False)
+                        matched.extend(matched_direct)
+                        
+                        # Eğer pattern "klasör\*.*" formatındaysa, klasörün alt klasörlerini de dahil et
+                        # Örnek: "build\*.*" -> hem "build\*.*" hem de "build\**\*.*" eşleşmeli
+                        # Pattern'i analiz et: klasör\*.* veya klasör/*.* formatında mı?
+                        pattern_normalized = pattern.replace('/', os.sep).replace('\\', os.sep)
+                        parts = pattern_normalized.split(os.sep)
+                        if len(parts) >= 2 and '*' in parts[-1]:
+                            # Klasör adı + wildcard formatı (örn: build\*.*)
+                            # Alt klasörleri de dahil etmek için ek pattern oluştur
+                            folder_part = os.sep.join(parts[:-1])  # klasör kısmı
+                            file_part = parts[-1]  # dosya paterni (*.*, *.pyc vs)
+                            
+                            # Kaynak klasörün altındaki build\**\*.* 
+                            direct_recursive = os.path.join(source_path, folder_part, '**', file_part)
+                            matched_direct_rec = glob.glob(direct_recursive, recursive=True)
+                            matched.extend(matched_direct_rec)
+                            
+                            # Her seviyedeki build klasörlerinin alt klasörleri
+                            # source_path\**\build\**\*.* formatında
+                            nested_recursive = os.path.join(source_path, '**', folder_part, '**', file_part)
+                            matched_nested = glob.glob(nested_recursive, recursive=True)
+                            matched.extend(matched_nested)
                     else:
                         # Sadece direkt alt klasörde
                         full_pattern = os.path.join(source_path, pattern)
