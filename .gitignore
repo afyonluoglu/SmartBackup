@@ -19,6 +19,10 @@ build/
 *.iss
 *.cfg
 *.ico
+*.exe
+# Ignore original install package and "required libraries" list
+!SmartBackupInstall.exe
+!requirements.txt
 
 # Python bytecode files
 *.py[cod]
