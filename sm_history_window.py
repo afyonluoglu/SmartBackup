@@ -1544,6 +1544,15 @@ class FileSearchWindow(ctk.CTkToplevel):
                     return 0
             
             items.sort(key=lambda x: get_size_bytes(x[0]), reverse=self.sort_reverse)
+        elif col == "Tarih":
+            def get_timestamp(date_str):
+                try:
+                    dt = datetime.strptime(date_str, '%d.%m.%Y %H:%M')
+                    return dt.timestamp()
+                except:
+                    return 0
+            
+            items.sort(key=lambda x: get_timestamp(x[0]), reverse=self.sort_reverse)
         else:
             # Diğer sütunlar için alfabetik sıralama
             items.sort(key=lambda x: x[0].lower() if isinstance(x[0], str) else x[0], 

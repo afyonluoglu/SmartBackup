@@ -527,10 +527,15 @@ class DatabaseManager:
     
     def set_setting(self, key: str, value: str):
         """Ayar değeri kaydet"""
-        self.cursor.execute('''
-            INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)
-        ''', (key, value))
-        self.conn.commit()
+        try:
+            self.cursor.execute('''
+                INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)
+            ''', (key, value))
+            self.conn.commit()
+        except Exception:
+            mesaj = f"DEBUG (set_setting) - Önemli Hata: Veritabanına ayar kaydedilemedi, smartbackup.db dosyası salt-okunur, erişilemez ya da yapısal bozulmaya uğramış olabilir: {key} = {value}" 
+            print(mesaj)
+            pass
     
     # ==================== ANALİZ SEÇİMLERİ İŞLEMLERİ ====================
     
