@@ -4,8 +4,8 @@ Tarih: 19 Kasım 2025
 Yazar: Dr. Mustafa Afyonluoğlu
 
 Gerekli Kütüphaneler:
-    - sqlite3 (standart kütüphane)
-    - os (standart kütüphane)
+    - sqlite3  (standart kütüphane)
+    - os       (standart kütüphane)
     - datetime (standart kütüphane)
 """
 
