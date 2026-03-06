@@ -290,23 +290,6 @@ Yedekleme geçmişi penceresinde **"🔍 Ara"** butonuna tıklayarak veritabanı
 
 > **İpucu:** Wildcard kullanmadan arama yaparsanız, girilen kelimeyi içeren tüm dosyalar listelenir. Örneğin "rapor" araması, "rapor.docx", "yillik_rapor.pdf", "rapor_2024.xlsx" gibi tüm dosyaları bulur.
 
-### 🔍 Dosya Arama
-
-Herhangi bir eşleştirmede tanımladığınız kaynak klasörde veya kendi vereceğiniz herhangi bir klasörde dosya araması yapabilirsiniz.
-
-![Dosya Arama](screenshots/12-file-search.png)
-
-#### Yöntem 1: Eşleştirme Üzerinden
-
-1. Eşleştirme listesinde bir satıra sağ tık yapın
-2. "Kaynak Klasörde Ara" seçeneğini seçin
-3. Arama penceresi otomatik olarak kaynak klasörü yükler
-
-#### Yöntem 2: Genel Arama
-
-1. Ana ekranda "Klasörde Ara" düğmesine tıklayın
-2. "Gözat..." ile istediğiniz klasörü seçin
-3. Herhangi bir klasörde arama yapabilirsiniz
 
 ### 🎨 Kullanıcı Arayüzü
 
