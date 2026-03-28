@@ -35,6 +35,7 @@ class MappingMixin:
         for mapping in mappings:
             subdirs = "Evet" if mapping['include_subdirs'] else "Hayır"
             exclude_text = mapping.get('exclude_filter', '') or '-'
+            mapping_name = mapping.get('mapping_name', '') or '-'
             
             # Bu eşleştirmenin erişilemeyen sürücüleri var mı kontrol et
             inaccessible = self._get_inaccessible_drives_for_mapping(
@@ -46,6 +47,7 @@ class MappingMixin:
             
             self.mapping_tree.insert("", "end", values=(
                 mapping['id'],
+                mapping_name,
                 mapping['source_path'],
                 mapping['file_filter'],
                 exclude_text,
@@ -92,9 +94,9 @@ class MappingMixin:
         self.wait_window(dialog)
         
         if dialog.result:
-            source, filter_str, exclude_str, subdirs, target = dialog.result
+            mapping_name, source, filter_str, exclude_str, subdirs, target = dialog.result
             self.db.add_mapping(self.current_project_id, source, filter_str, 
-                              exclude_str, subdirs, target)
+                              exclude_str, subdirs, target, mapping_name)
             # Hedef sürücü kontrolünü güncelle
             self._check_all_target_drives()
             self._load_mappings()
@@ -118,13 +120,14 @@ class MappingMixin:
                               mapping['file_filter'],
                               mapping.get('exclude_filter', ''),
                               bool(mapping['include_subdirs']),
-                              mapping['target_path'])
+                              mapping['target_path'],
+                              mapping.get('mapping_name', ''))
         self.wait_window(dialog)
         
         if dialog.result:
-            source, filter_str, exclude_str, subdirs, target = dialog.result
+            mapping_name, source, filter_str, exclude_str, subdirs, target = dialog.result
             self.db.update_mapping(mapping_id, source, filter_str, exclude_str, 
-                                 subdirs, target)
+                                 subdirs, target, mapping_name)
             # Hedef sürücü kontrolünü güncelle
             self._check_all_target_drives()
             self._load_mappings()
@@ -169,13 +172,17 @@ class MappingMixin:
         
         # Yeni eşleşme ekle (aynı bilgilerle)
         try:
+            mapping_name = mapping.get('mapping_name', '')
+            if mapping_name:
+                mapping_name = f"{mapping_name} (Kopya)"
             self.db.add_mapping(
                 self.current_project_id,
                 mapping['source_path'],
                 mapping['file_filter'],
                 mapping.get('exclude_filter', ''),
                 bool(mapping['include_subdirs']),
-                mapping['target_path']
+                mapping['target_path'],
+                mapping_name
             )
             # Hedef sürücü kontrolünü güncelle
             self._check_all_target_drives()
@@ -204,6 +211,7 @@ class MappingMixin:
         
         # Panoya kopyala (proje bağımsız)
         self.clipboard_mapping = {
+            'mapping_name': mapping.get('mapping_name', ''),
             'source_path': mapping['source_path'],
             'file_filter': mapping['file_filter'],
             'exclude_filter': mapping.get('exclude_filter', ''),
@@ -233,7 +241,8 @@ class MappingMixin:
                 self.clipboard_mapping['file_filter'],
                 self.clipboard_mapping['exclude_filter'],
                 self.clipboard_mapping['include_subdirs'],
-                self.clipboard_mapping['target_path']
+                self.clipboard_mapping['target_path'],
+                self.clipboard_mapping.get('mapping_name', '')
             )
             # Hedef sürücü kontrolünü güncelle
             self._check_all_target_drives()

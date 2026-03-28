@@ -51,6 +51,7 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS mappings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 project_id INTEGER NOT NULL,
+                mapping_name TEXT DEFAULT '',
                 source_path TEXT NOT NULL,
                 file_filter TEXT NOT NULL,
                 exclude_filter TEXT DEFAULT '',
@@ -66,6 +67,12 @@ class DatabaseManager:
             self.cursor.execute("SELECT exclude_filter FROM mappings LIMIT 1")
         except:
             self.cursor.execute("ALTER TABLE mappings ADD COLUMN exclude_filter TEXT DEFAULT ''")
+        
+        # Eski veritabanlarına mapping_name kolonu ekle
+        try:
+            self.cursor.execute("SELECT mapping_name FROM mappings LIMIT 1")
+        except:
+            self.cursor.execute("ALTER TABLE mappings ADD COLUMN mapping_name TEXT DEFAULT ''")
         
         # Yedekleme geçmişi tablosu
         self.cursor.execute('''
@@ -295,14 +302,15 @@ class DatabaseManager:
     # ==================== EŞLEŞME İŞLEMLERİ ====================
     
     def add_mapping(self, project_id: int, source_path: str, file_filter: str,
-                    exclude_filter: str, include_subdirs: bool, target_path: str) -> int:
+                    exclude_filter: str, include_subdirs: bool, target_path: str,
+                    mapping_name: str = "") -> int:
         """Yeni eşleşme ekle"""
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.cursor.execute('''
-            INSERT INTO mappings (project_id, source_path, file_filter, exclude_filter,
+            INSERT INTO mappings (project_id, mapping_name, source_path, file_filter, exclude_filter,
                                   include_subdirs, target_path, created_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (project_id, source_path, file_filter, exclude_filter, 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (project_id, mapping_name, source_path, file_filter, exclude_filter, 
               1 if include_subdirs else 0, target_path, now))
         self.conn.commit()
         return self.cursor.lastrowid
@@ -321,13 +329,14 @@ class DatabaseManager:
         return dict(row) if row else None
     
     def update_mapping(self, mapping_id: int, source_path: str, file_filter: str,
-                       exclude_filter: str, include_subdirs: bool, target_path: str):
+                       exclude_filter: str, include_subdirs: bool, target_path: str,
+                       mapping_name: str = ""):
         """Eşleşme güncelle"""
         self.cursor.execute('''
             UPDATE mappings 
-            SET source_path = ?, file_filter = ?, exclude_filter = ?, include_subdirs = ?, target_path = ?
+            SET mapping_name = ?, source_path = ?, file_filter = ?, exclude_filter = ?, include_subdirs = ?, target_path = ?
             WHERE id = ?
-        ''', (source_path, file_filter, exclude_filter, 1 if include_subdirs else 0, 
+        ''', (mapping_name, source_path, file_filter, exclude_filter, 1 if include_subdirs else 0, 
               target_path, mapping_id))
         self.conn.commit()
     

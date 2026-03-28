@@ -100,11 +100,19 @@ class BackupMixin:
         # Detayları Kaydet butonunu gizle (yeni analiz yapılıyor)
         self._hide_save_details_button()
         
-        # Analiz seçim dialogunu göster
-        mapping_list = [(m['id'], m['source_path'], m.get('exclude_filter', '')) for m in mappings]
+        # Proje adını al
+        project = self.db.get_project_by_id(self.current_project_id)
+        project_name = project['name'] if project else ""
+        
+        # Analiz seçim dialogunu göster - yeni mapping_list yapısı
+        mapping_list = [
+            (m['id'], m.get('mapping_name', ''), m['source_path'], 
+             m['file_filter'], m.get('exclude_filter', ''), m['target_path']) 
+            for m in mappings
+        ]
         # Veritabanından son seçimleri al
         saved_selections = self.db.get_analysis_selections(self.current_project_id)
-        selection_dialog = AnalysisSelectionDialog(self, mapping_list, saved_selections)
+        selection_dialog = AnalysisSelectionDialog(self, mapping_list, saved_selections, project_name)
         result = selection_dialog.show()
         
         if not result:
@@ -513,10 +521,18 @@ class BackupMixin:
                                       "Lütfen önce 'Analiz' butonuna basarak yedeklenecek dosyaları analiz edin!")
             return
         
-        # Mapping seçim dialogunu göster
-        mapping_list = [(m['id'], m['source_path'], m.get('exclude_filter', '')) for m in mappings]
+        # Proje adını al
+        project = self.db.get_project_by_id(self.current_project_id)
+        project_name = project['name'] if project else ""
+        
+        # Mapping seçim dialogunu göster - yeni mapping_list yapısı
+        mapping_list = [
+            (m['id'], m.get('mapping_name', ''), m['source_path'], 
+             m['file_filter'], m.get('exclude_filter', ''), m['target_path']) 
+            for m in mappings
+        ]
         analyzed_ids = set(self.analysis_results.keys())
-        selection_dialog = BackupSelectionDialog(self, mapping_list, analyzed_ids, self.analysis_results)
+        selection_dialog = BackupSelectionDialog(self, mapping_list, analyzed_ids, self.analysis_results, project_name)
         result = selection_dialog.show()
         
         if not result:

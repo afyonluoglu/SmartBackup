@@ -23,15 +23,16 @@
 ### Adım 2: Eşleşme Ekleyin
 1. Yeni oluşturduğunuz proje otomatik seçilecek
 2. Sağ üstteki **"Yeni Eşleşme"** butonuna tıklayın
-3. **Kaynak Klasör**: Yedeklemek istediğiniz klasörü seçin (örn: `C:\Users\YourName\Documents`)
-4. **Dosya Filtresi**: (Birden fazla filtre, aralarına virgül konularak verilebilir)
+3. **Eşleşme İsmi**: Eşleşme için açıklayıcı bir isim verin (örn: "Belgeler", "Resimler") - Bu isim ana tabloda ve seçim diyaloglarında görünür
+4. **Kaynak Klasör**: Yedeklemek istediğiniz klasörü seçin (örn: `C:\Users\YourName\Documents`)
+5. **Dosya Filtresi**: (Birden fazla filtre, aralarına virgül konularak verilebilir)
    - `*.*` = Tüm dosyalar
    - `*.docx` = Sadece Word belgeleri
    - `*.pdf` = Sadece PDF dosyaları
    - `rapor*.xlsx` = "rapor" ile başlayan Excel dosyaları
-5. **Alt klasörleri dahil et**: ✓ işaretleyin (alt klasörlerdeki dosyalar da dahil olur)
-6. **Hedef Klasör**: Yedeklemenin kopyalanacağı yeri seçin (örn: `D:\Backups\Documents`)
-7. **Yedeklenmeyecek dosyalar**: Yedeklemede hariç tutulmasını istediğiniz dosya filtresini girin. 
+6. **Alt klasörleri dahil et**: ✓ işaretleyin (alt klasörlerdeki dosyalar da dahil olur)
+7. **Hedef Klasör**: Yedeklemenin kopyalanacağı yeri seçin (örn: `D:\Backups\Documents`)
+8. **Yedeklenmeyecek dosyalar**: Yedeklemede hariç tutulmasını istediğiniz dosya filtresini girin. 
 (Birden fazla filtre, aralarına virgül konularak verilebilir)
 Örnek:
    *.db - Tüm .db uzantılı dosyaları hariç tut
@@ -39,7 +40,7 @@
    temp\*.* - temp klasöründeki tüm dosyaları hariç tut
    __pycache__\*.*, *.pyc - Python cache dosyalarını hariç tut
    deneme\*.* - deneme klasöründeki tüm dosyaları hariç tut
-8. **Tamam**'a tıklayın
+9. **Tamam**'a tıklayın
 
 ### Adım 3: Analiz Yapın
 1. **"Analiz"** butonuna tıklayın

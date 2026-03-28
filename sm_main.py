@@ -244,7 +244,7 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
                  foreground=[('selected', 'white')])
 
         # Treeview
-        columns = ("ID", "Kaynak", "Filtre", "Hariç Tutulanlar", "Alt Klasörler", "Hedef")
+        columns = ("ID", "İsim", "Kaynak", "Filtre", "Hariç Tutulanlar", "Alt Klasörler", "Hedef")
         self.mapping_tree = ttk.Treeview(tree_frame, columns=columns, 
                                         show="headings",
                                         height=6,  # ←  (satır sayısı cinsinden)
@@ -253,6 +253,7 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
         
         # Sütun başlıkları
         self.mapping_tree.heading("ID", text="ID")
+        self.mapping_tree.heading("İsim", text="İsim")
         self.mapping_tree.heading("Kaynak", text="Kaynak Klasör")
         self.mapping_tree.heading("Filtre", text="Dosya")
         self.mapping_tree.heading("Hariç Tutulanlar", text="Hariç Tutulanlar")
@@ -261,11 +262,12 @@ class SmartBackupApp(ctk.CTk, ProjectMixin, MappingMixin, BackupMixin):
         
         # Sütun genişlikleri
         self.mapping_tree.column("ID", width=50, stretch=False, anchor="center")
-        self.mapping_tree.column("Kaynak", stretch=False, width=500)
+        self.mapping_tree.column("İsim", stretch=False, width=150)
+        self.mapping_tree.column("Kaynak", stretch=False, width=450)
         self.mapping_tree.column("Filtre", stretch=False, width=100)
         self.mapping_tree.column("Hariç Tutulanlar", stretch=False, width=180)
         self.mapping_tree.column("Alt Klasörler", stretch=False, width=100, anchor="center")
-        self.mapping_tree.column("Hedef", stretch=False, width=700)
+        self.mapping_tree.column("Hedef", stretch=False, width=600)
         
         # Scrollbar yapılandırması
         vsb.config(command=self.mapping_tree.yview)

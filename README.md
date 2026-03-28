@@ -87,6 +87,7 @@ Smart Backup, kullanıcının tanımladığı kaynak klasörlerdeki dosyaları h
 
 ![Eşleştirme Tablosu](screenshots/01-eşleştirme.png)
 
+- **Eşleştirme İsmi**: Her eşleştirmeye açıklayıcı bir isim verilebilir (ana tabloda ID sütununun yanında görünür)
 - **Kopyala/Yapıştır**: Eşleştirmeleri sağ tık menüsünden kopyalayıp başka projelere yapıştırabilirsiniz
 - **Çoğaltma**: Mevcut eşleştirmeleri hızlıca çoğaltabilirsiniz
 - **Klasör Erişimi**: Sağ tık ile kaynak, hedef veya revision klasörlerini doğrudan açabilirsiniz
@@ -150,6 +151,12 @@ Analiz işlemi sırasında aşağıdaki seçenekleri kontrol edebilirsiniz:
 - ✅ **Silinen dosyalar**: Kaynakta olmayan hedef dosyalar
 - ✅ **Arşivlenmiş dosyalar**: _REVISIONS klasöründeki eski versiyonlar
 
+**Eşleştirme Seçimi:**
+- Analiz edilecek eşleştirmeleri seçim penceresinde belirleyebilirsiniz
+- Paket adı pencerenin üstünde kırmızı renkte gösterilir
+- Eşleştirmeler isimleriyle listelenir (isim tanımlıysa)
+- Üzerine geldiğinizde tooltip ile kaynak/hedef klasör ve filtre bilgileri görüntülenir
+
 ![Analiz Sonuçları](screenshots/03-analiz-sonuç.png)
 
 ### 💾 Yedekleme İşlemi
@@ -158,6 +165,9 @@ Analiz işlemi sırasında aşağıdaki seçenekleri kontrol edebilirsiniz:
 
 Yedekleme sırasında:
 - Hangi eşleştirmelerin yedekleneceğini seçebilirsiniz
+- Seçim penceresinde paket adı kırmızı renkte gösterilir
+- Eşleştirmeler isimleriyle listelenir ve tooltip ile detaylar görüntülenir
+- Tooltip'te yedekleme sayısı ve toplam boyut bilgisi de gösterilir
 - Silinen dosyaları arşive taşıma seçeneği
 - Gerçek zamanlı ilerleme takibi
 - ESC tuşu ile güvenli iptal

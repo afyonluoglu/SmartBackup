@@ -9,8 +9,93 @@ Gerekli Kütüphaneler:
 """
 
 import customtkinter as ctk
-from tkinter import messagebox, filedialog, Menu
+from tkinter import messagebox, filedialog, Menu, Label
 from typing import Callable, Optional
+
+from regex import T
+
+TOOLTIP_BG_STANDARD = 1
+TOOLTIP_BG_ACTIVE = 2
+TOOLTIP_BG_BLANK = 3
+
+class ToolTip:
+    """Basit tooltip sınıfı - fare hover'da bilgi gösterir"""
+    
+    # Class-level aktif tooltip takibi - bir seferde sadece bir tooltip açık olabilir
+    _active_tooltip = None
+    
+    def __init__(self, widget, back_color: int = TOOLTIP_BG_STANDARD, text: str = ""):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.bg_color : str = "#000000"
+
+        if back_color == TOOLTIP_BG_STANDARD:
+            self.bg_color = "#2b2b2b"
+        elif back_color == TOOLTIP_BG_ACTIVE:
+            self.bg_color = "#188100"
+        elif back_color == TOOLTIP_BG_BLANK:
+            self.bg_color = "#A34C00"
+       
+        self.widget.bind('<Enter>', self._show_tooltip)
+        self.widget.bind('<Leave>', self._hide_tooltip)
+    
+    @classmethod
+    def _close_active_tooltip(cls):
+        """Aktif tooltip varsa kapat"""
+        if cls._active_tooltip is not None:
+            if cls._active_tooltip.tooltip_window:
+                try:
+                    cls._active_tooltip.tooltip_window.destroy()
+                    print("[DEBUG] *********** Aktif tooltip kapatıldı")
+                except:
+                    pass
+                cls._active_tooltip.tooltip_window = None
+            cls._active_tooltip = None
+    
+    def _show_tooltip(self, event=None):
+        """Tooltip penceresini göster"""
+        # Önce aktif tooltip varsa kapat
+        if ToolTip._active_tooltip is not None and ToolTip._active_tooltip is not self:
+            ToolTip._close_active_tooltip()
+
+        if self.tooltip_window:
+            return
+        
+        x, y, _, _ = self.widget.bbox("insert") if hasattr(self.widget, 'bbox') else (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        self.tooltip_window = tw = ctk.CTkToplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        tw.attributes('-topmost', True)
+        
+        # Tooltip içeriği
+        frame = ctk.CTkFrame(tw, corner_radius=5, fg_color= self.bg_color, border_width=1, border_color="#555555")
+        frame.pack(fill="both", expand=True)
+        
+        label = ctk.CTkLabel(frame, text=self.text, justify="left", 
+                            font=("Arial", 12), text_color="#ffffff",
+                            wraplength=500)
+        label.pack(padx=10, pady=8)
+        
+        # Bu tooltip'i aktif olarak işaretle
+        ToolTip._active_tooltip = self
+        # print(f"[DEBUG] _show_tooltip: Yeni tooltip açıldı -> {self.tooltip_window.title()}")
+    
+    def _hide_tooltip(self, event=None):
+        """Tooltip penceresini gizle"""
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            # print(f"[DEBUG] _hide_tooltip: Tooltip kapatıldı")
+            self.tooltip_window = None
+            if ToolTip._active_tooltip is self:
+                ToolTip._active_tooltip = None
+    
+    def update_text(self, new_text: str):
+        """Tooltip metnini güncelle"""
+        self.text = new_text
 
 class ProjectDialog(ctk.CTkToplevel):
     """Proje ekleme/düzenleme dialog'u"""
@@ -89,12 +174,12 @@ class MappingDialog(ctk.CTkToplevel):
     def __init__(self, parent, title: str = "Yeni Eşleşme",
                  source_path: str = "", file_filter: str = "*.*",
                  exclude_filter: str = "", include_subdirs: bool = True, 
-                 target_path: str = ""):
+                 target_path: str = "", mapping_name: str = ""):
         super().__init__(parent)
         
         self.result = None
         self.title(title)
-        self.geometry("700x450")
+        self.geometry("700x550")
         # self._center_window()
         
         # Modal yap
@@ -105,7 +190,7 @@ class MappingDialog(ctk.CTkToplevel):
         self.bind('<Escape>', lambda e: self.destroy())
         
         self._create_widgets(source_path, file_filter, exclude_filter, 
-                            include_subdirs, target_path)
+                            include_subdirs, target_path, mapping_name)
     
     def _center_window(self):
         """Pencereyi ekranda ortala"""
@@ -117,11 +202,19 @@ class MappingDialog(ctk.CTkToplevel):
         self.geometry(f'{width}x{height}+{x}+{y}')
     
     def _create_widgets(self, source_path: str, file_filter: str,
-                       exclude_filter: str, include_subdirs: bool, target_path: str):
+                       exclude_filter: str, include_subdirs: bool, target_path: str,
+                       mapping_name: str = ""):
         """Widget'ları oluştur"""
         # Padding frame
         main_frame = ctk.CTkFrame(self)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Eşleşme ismi
+        ctk.CTkLabel(main_frame, text="Eşleşme İsmi (opsiyonel):", anchor="w").pack(fill="x", pady=(0, 5))
+        self.name_entry = ctk.CTkEntry(main_frame, placeholder_text="Bu eşleştirmeye bir isim verin")
+        self.name_entry.pack(fill="x", pady=(0, 15))
+        self.name_entry.insert(0, mapping_name)
+        self.name_entry.focus()
         
         # Kaynak klasör
         ctk.CTkLabel(main_frame, text="Kaynak Klasör:", anchor="w").pack(fill="x", pady=(0, 5))
@@ -201,6 +294,7 @@ class MappingDialog(ctk.CTkToplevel):
     
     def _on_ok(self):
         """Tamam butonuna basıldı"""
+        mapping_name = self.name_entry.get().strip()
         source = self.source_entry.get().strip()
         target = self.target_entry.get().strip()
         file_filter = self.filter_entry.get().strip()
@@ -216,7 +310,7 @@ class MappingDialog(ctk.CTkToplevel):
             messagebox.showwarning("Uyarı", "Dosya filtresi boş olamaz!", parent=self)
             return
         
-        self.result = (source, file_filter, exclude_filter, self.subdirs_var.get(), target)
+        self.result = (mapping_name, source, file_filter, exclude_filter, self.subdirs_var.get(), target)
         self.destroy()
 
 
@@ -329,11 +423,11 @@ class ProgressDialog(ctk.CTkToplevel):
 class AnalysisSelectionDialog:
     """Analiz için mapping seçim dialogu"""
     
-    def __init__(self, parent, mappings: list, saved_selections: dict = None):
+    def __init__(self, parent, mappings: list, saved_selections: dict = None, project_name: str = ""):
         """
         Args:
             parent: Ana pencere
-            mappings: [(mapping_id, include_filter, exclude_filter), ...] listesi
+            mappings: [(mapping_id, mapping_name, source_path, file_filter, exclude_filter, target_path), ...] listesi
             saved_selections: Daha önce seçilmiş ayarlar dictionary (opsiyonel)
                 {
                     'mapping_ids': [int, ...],
@@ -342,8 +436,11 @@ class AnalysisSelectionDialog:
                     'show_skipped_files': bool,
                     'max_files_to_show': int
                 }
+            project_name: Proje/Paket adı
         """
         self.result = None  # Seçilen mapping ID'leri ve ayarlar
+        self.project_name = project_name
+        self.tooltips = []  # Tooltip nesnelerini sakla
         
         # Varsayılan değerler
         if saved_selections is None:
@@ -357,7 +454,7 @@ class AnalysisSelectionDialog:
         
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Analiz Edilecek Mapping'leri Seç")
-        self.dialog.geometry("850x500+100+100")
+        self.dialog.geometry("900x650+100+100")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         
@@ -365,13 +462,27 @@ class AnalysisSelectionDialog:
         main_frame = ctk.CTkFrame(self.dialog)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Başlık
-        title_label = ctk.CTkLabel(
-            main_frame, 
+        # Başlık Frame - Paket adı kırmızı, açıklama siyah
+        title_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        title_frame.pack(fill="x", pady=(0, 10))
+        
+        # Paket adı (kırmızı ve büyük font)
+        if project_name:
+            package_label = ctk.CTkLabel(
+                title_frame, 
+                text=f"Paket: {project_name}",
+                font=("Arial", 14, "bold"),
+                text_color="#B00404"
+            )
+            package_label.pack(side="left", padx=(0, 15))
+        
+        # Açıklama (normal renk)
+        desc_label = ctk.CTkLabel(
+            title_frame, 
             text="Analiz edilecek dosya eşleştirmelerini seçin:",
             font=("Arial", 12, "bold")
         )
-        title_label.pack(pady=(0, 10))
+        desc_label.pack(side="left")
         
         # Scrollable frame
         scroll_frame = ctk.CTkScrollableFrame(main_frame)
@@ -379,7 +490,14 @@ class AnalysisSelectionDialog:
         
         # Checkbox'lar ve mapping bilgileri
         self.checkboxes = {}
-        for mapping_id, include_filter, exclude_filter in mappings:
+        for mapping_data in mappings:
+            mapping_id = mapping_data[0]
+            mapping_name = mapping_data[1] if len(mapping_data) > 1 else ""
+            source_path = mapping_data[2] if len(mapping_data) > 2 else ""
+            file_filter = mapping_data[3] if len(mapping_data) > 3 else "*.*"
+            exclude_filter = mapping_data[4] if len(mapping_data) > 4 else ""
+            target_path = mapping_data[5] if len(mapping_data) > 5 else ""
+            
             checkbox_frame = ctk.CTkFrame(scroll_frame)
             checkbox_frame.pack(fill="x", pady=2, padx=5)
             
@@ -397,17 +515,28 @@ class AnalysisSelectionDialog:
             )
             cb.pack(side="left", padx=(0, 10))
             
-            # Mapping bilgisi
-            info_text = f"Include: {include_filter}"
-            if exclude_filter:
-                info_text += f"  |  Exclude: {exclude_filter}"
+            # Eşleşme ismi veya kaynak yolu göster
+            display_name = mapping_name if mapping_name else f"[{mapping_id}] {source_path[:50]}..."
             
             info_label = ctk.CTkLabel(
                 checkbox_frame,
-                text=info_text,
-                anchor="w"
+                text=display_name,
+                anchor="w",
+                font=("Arial", 14, "bold"),
+                text_color="#0435B0"
             )
             info_label.pack(side="left", fill="x", expand=True)
+            
+            # Tooltip oluştur
+            tooltip_text = f"📁 Kaynak: {source_path}\n"
+            tooltip_text += f"📂 Hedef: {target_path}\n"
+            tooltip_text += f"✅ Dahil: {file_filter}"
+            if exclude_filter:
+                tooltip_text += f"\n❌ Hariç: {exclude_filter}"
+            
+            # tooltip = ToolTip(info_label, tooltip_text)
+            tooltip = ToolTip(cb, TOOLTIP_BG_STANDARD, tooltip_text)
+            self.tooltips.append(tooltip)
         
         # Analiz seçenekleri frame
         options_frame = ctk.CTkFrame(main_frame)
@@ -506,8 +635,9 @@ class AnalysisSelectionDialog:
         count_info.pack(side="left", padx=5)
         
         # Butonlar
-        button_frame = ctk.CTkFrame(main_frame)
+        button_frame = ctk.CTkFrame(main_frame, height = 60)
         button_frame.pack(fill="x")
+        button_frame.pack_propagate(False) 
         
         # Tümünü seç/kaldır butonları
         select_all_btn = ctk.CTkButton(
@@ -616,17 +746,21 @@ class AnalysisSelectionDialog:
 class BackupSelectionDialog:
     """Yedekleme için mapping seçim dialogu"""
     
-    def __init__(self, parent, mappings: list, analyzed_mapping_ids: set = None, analysis_results: dict = None):
+    def __init__(self, parent, mappings: list, analyzed_mapping_ids: set = None, 
+                 analysis_results: dict = None, project_name: str = ""):
         """
         Args:
             parent: Ana pencere
-            mappings: [(mapping_id, include_filter, exclude_filter), ...] listesi
+            mappings: [(mapping_id, mapping_name, source_path, file_filter, exclude_filter, target_path), ...] listesi
             analyzed_mapping_ids: Analiz yapılmış mapping ID'leri seti
             analysis_results: Analiz sonuçları dict {mapping_id: {...}}
+            project_name: Proje/Paket adı
         """
         self.result = None  # Seçilen mapping ID'leri
         self.analyzed_mapping_ids = analyzed_mapping_ids or set()
         self.analysis_results = analysis_results or {}
+        self.project_name = project_name
+        self.tooltips = []  # Tooltip nesnelerini sakla
         
         # Toplam gizli ve silinen dosya sayılarını hesapla
         self.total_hidden_files = 0
@@ -638,7 +772,7 @@ class BackupSelectionDialog:
         
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Yedeklenecek Mapping'leri Seç")
-        self.dialog.geometry("750x470+100+100")
+        self.dialog.geometry("900x600+100+100")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         
@@ -646,13 +780,27 @@ class BackupSelectionDialog:
         main_frame = ctk.CTkFrame(self.dialog)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Başlık
-        title_label = ctk.CTkLabel(
-            main_frame, 
+        # Başlık Frame - Paket adı kırmızı, açıklama siyah
+        title_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        title_frame.pack(fill="x", pady=(0, 10))
+        
+        # Paket adı (kırmızı ve büyük font)
+        if project_name:
+            package_label = ctk.CTkLabel(
+                title_frame, 
+                text=f"Paket: {project_name}",
+                font=("Arial", 14, "bold"),
+                text_color="#FF4444"
+            )
+            package_label.pack(side="left", padx=(0, 15))
+        
+        # Açıklama (normal renk)
+        desc_label = ctk.CTkLabel(
+            title_frame, 
             text="Yedeklenecek dosya eşleştirmelerini seçin:",
             font=("Arial", 12, "bold")
         )
-        title_label.pack(pady=(0, 10))
+        desc_label.pack(side="left")
         
         # Scrollable frame
         scroll_frame = ctk.CTkScrollableFrame(main_frame)
@@ -660,7 +808,14 @@ class BackupSelectionDialog:
         
         # Checkbox'lar ve mapping bilgileri
         self.checkboxes = {}
-        for mapping_id, include_filter, exclude_filter in mappings:
+        for mapping_data in mappings:
+            mapping_id = mapping_data[0]
+            mapping_name = mapping_data[1] if len(mapping_data) > 1 else ""
+            source_path = mapping_data[2] if len(mapping_data) > 2 else ""
+            file_filter = mapping_data[3] if len(mapping_data) > 3 else "*.*"
+            exclude_filter = mapping_data[4] if len(mapping_data) > 4 else ""
+            target_path = mapping_data[5] if len(mapping_data) > 5 else ""
+            
             checkbox_frame = ctk.CTkFrame(scroll_frame)
             checkbox_frame.pack(fill="x", pady=2, padx=5)
             
@@ -679,20 +834,68 @@ class BackupSelectionDialog:
             )
             cb.pack(side="left", padx=(0, 10))
             
-            # Mapping bilgisi
-            info_text = f"Include: {include_filter}"
-            if exclude_filter:
-                info_text += f"  |  Exclude: {exclude_filter}"
+            # Eşleşme ismi veya kaynak yolu göster
+            display_name = mapping_name if mapping_name else f"[{mapping_id}] {source_path[:50]}..."
             if not is_analyzed:
-                info_text += "  [ANALİZ YAPILMAMIŞ]"
+                display_name += "  [ANALİZ YAPILMAMIŞ]"
+                tooltip_color = TOOLTIP_BG_STANDARD
+            else:
+                # Analiz yapılmışsa satırda dosya adedi ve boyutunu göster
+                if mapping_id in self.analysis_results:
+                    ar = self.analysis_results[mapping_id]
+                    backup_count = len(ar.get('files_to_backup', []))
+                    backup_size = ar.get('total_size', 0)
+                    # Boyutu formatla
+                    if backup_size >= 1024 * 1024 * 1024:
+                        size_str = f"{backup_size / (1024*1024*1024):.2f} GB"
+                    elif backup_size >= 1024 * 1024:
+                        size_str = f"{backup_size / (1024*1024):.2f} MB"
+                    elif backup_size >= 1024:
+                        size_str = f"{backup_size / 1024:.2f} KB"
+                    else:
+                        size_str = f"{backup_size} B"
+                    display_name += f"  ({backup_count:,} dosya, {size_str})"
             
             info_label = ctk.CTkLabel(
                 checkbox_frame,
-                text=info_text,
+                text=display_name,
                 anchor="w",
-                text_color="gray" if not is_analyzed else None
+                font=("Arial", 14, "bold"),
+                text_color="#960000" if not is_analyzed else "#008B1A"
             )
             info_label.pack(side="left", fill="x", expand=True)
+            
+            # Tooltip oluştur
+            tooltip_text = f"📁 Kaynak: {source_path}\n"
+            tooltip_text += f"📂 Hedef: {target_path}\n"
+            tooltip_text += f"✅ Dahil: {file_filter}"
+            if exclude_filter:
+                tooltip_text += f"\n❌ Hariç: {exclude_filter}"
+            
+            # Analiz sonuçları varsa yedekleme bilgilerini de ekle
+            if is_analyzed and mapping_id in self.analysis_results:
+                ar = self.analysis_results[mapping_id]
+                # Doğru key'leri kullan: files_to_backup listesi ve total_size
+                backup_count = len(ar.get('files_to_backup', []))
+                backup_size = ar.get('total_size', 0)
+                # Boyutu formatla
+                if backup_size >= 1024 * 1024 * 1024:
+                    size_str = f"{backup_size / (1024*1024*1024):.2f} GB"
+                elif backup_size >= 1024 * 1024:
+                    size_str = f"{backup_size / (1024*1024):.2f} MB"
+                elif backup_size >= 1024:
+                    size_str = f"{backup_size / 1024:.2f} KB"
+                else:
+                    size_str = f"{backup_size} B"
+                tooltip_text += f"\n\n📊 Yedeklenecek: {backup_count:,} dosya ({size_str})"
+                
+                if backup_count >0:
+                    tooltip_color = TOOLTIP_BG_ACTIVE
+                else:
+                    tooltip_color = TOOLTIP_BG_BLANK
+
+            tooltip = ToolTip(cb, tooltip_color, tooltip_text)
+            self.tooltips.append(tooltip)
         
         # Yedekleme seçenekleri frame
         options_frame = ctk.CTkFrame(main_frame)
@@ -735,8 +938,9 @@ class BackupSelectionDialog:
         auto_save_cb.pack(pady=5)
         
         # Butonlar
-        button_frame = ctk.CTkFrame(main_frame)
+        button_frame = ctk.CTkFrame(main_frame, height = 60)
         button_frame.pack(fill="x")
+        button_frame.pack_propagate(False) 
         
         # Tümünü seç/kaldır butonları (sadece analiz yapılmışlar için)
         select_all_btn = ctk.CTkButton(
@@ -863,6 +1067,14 @@ class SourceSearchDialog(ctk.CTkToplevel):
         # Sıralama durumu: {'column': str, 'reverse': bool}
         self.sort_state = {'column': None, 'reverse': False}
         
+        # Arama durumu değişkenleri
+        self.search_running = False  # Arama devam ediyor mu?
+        self.search_cancelled = False  # Arama iptal edildi mi?
+        self.processed_files = 0  # İşlenen dosya sayısı
+        self.found_files = 0  # Bulunan dosya sayısı
+        self.search_thread = None  # Arama thread'i
+        self.update_timer_id = None  # UI güncelleme timer ID
+        
         width = 1100
         height = 600
         x = (self.winfo_screenwidth() // 2) - (width // 2)
@@ -875,10 +1087,18 @@ class SourceSearchDialog(ctk.CTkToplevel):
         self.transient(parent)
         self.grab_set()
         
-        # ESC tuşu ile kapat
-        self.bind('<Escape>', lambda e: self.destroy())
+        # ESC tuşu ile arama iptal veya kapat
+        self.bind('<Escape>', self._on_escape)
         
         self._create_widgets()
+    
+    def _on_escape(self, event=None):
+        """ESC tuşuna basıldığında - arama devam ediyorsa iptal et, değilse kapat"""
+        if self.search_running:
+            self.search_cancelled = True
+            print("DEBUG: Arama ESC tuşu ile iptal edildi")
+        else:
+            self.destroy()
     
     def _create_widgets(self):
         """Widget'ları oluştur"""
@@ -934,7 +1154,18 @@ class SourceSearchDialog(ctk.CTkToplevel):
         # Sonuç sayısı
         self.result_label = ctk.CTkLabel(main_frame, text="Sonuç: 0 dosya",
                                         font=("", 11))
-        self.result_label.pack(pady=(0, 5))
+        self.result_label.pack(pady=(0, 2))
+        
+        # İşlem durumu etiketi (arama sırasında güncellenir)
+        self.progress_label = ctk.CTkLabel(main_frame, text="",
+                                          font=("", 10))
+        self.progress_label.pack(pady=(0, 2))
+        
+        # Durum etiketi (iptal durumunda kırmızı gösterilir)
+        self.status_label = ctk.CTkLabel(main_frame, text="",
+                                        font=("", 11, "bold"),
+                                        text_color="#FF4444")
+        self.status_label.pack(pady=(0, 5))
         
         # Treeview için style
         style = ttk.Style()
@@ -1124,9 +1355,9 @@ class SourceSearchDialog(ctk.CTkToplevel):
         return True
     
     def _search_files(self):
-        """Arama yap"""
+        """Arama yap - thread ile arkaplanda çalışır"""
         import os
-        import glob
+        import threading
         
         search_term = self.search_entry.get().strip()
         if not search_term:
@@ -1146,90 +1377,182 @@ class SourceSearchDialog(ctk.CTkToplevel):
                                     f"Klasör bulunamadı:\n{self.source_path}")
             return
         
+        # Zaten arama yapılıyorsa bekle
+        if self.search_running:
+            print("DEBUG: Arama zaten devam ediyor")
+            return
+        
         # Mevcut sonuçları temizle
         for item in self.results_tree.get_children():
             self.results_tree.delete(item)
         
-        results = []
-        total_files = 0  # Toplam dosya sayısı
+        # Durum sıfırla
+        self.search_running = True
+        self.search_cancelled = False
+        self.processed_files = 0
+        self.found_files = 0
+        self.search_results = []
+        self.status_label.configure(text="")  # Önceki durumu temizle
+        self.progress_label.configure(text="Arama başlatılıyor...")
+        self.result_label.configure(text="Sonuç: 0 dosya")
+        
+        print(f"DEBUG: Arama başlatıldı - Klasör: {self.source_path}, Arama: {search_term}")
+        
+        # Arama parametreleri
+        search_params = {
+            'search_term': search_term,
+            'source_path': self.source_path,
+            'include_subfolders': self.subfolders_var.get()
+        }
+        
+        # Thread'i başlat
+        self.search_thread = threading.Thread(target=self._search_worker, args=(search_params,))
+        self.search_thread.daemon = True
+        self.search_thread.start()
+        
+        # UI güncelleme timer'ı başlat (her 1 saniye)
+        self._start_progress_timer()
+    
+    def _start_progress_timer(self):
+        """Progress timer'ı başlat - her saniye UI'yı günceller"""
+        if self.search_running:
+            # UI'yı güncelle
+            self.progress_label.configure(
+                text=f"Taranan dosya: {self.processed_files:,} | Bulunan: {self.found_files:,}"
+            )
+            print(f"DEBUG: İşlem durumu - Taranan: {self.processed_files}, Bulunan: {self.found_files}")
+            
+            # Sonraki güncelleme için zamanlayıcı
+            self.update_timer_id = self.after(1000, self._start_progress_timer)
+        else:
+            # Arama bitti, son UI güncellemesi
+            self._finalize_search()
+    
+    def _search_worker(self, params):
+        """Thread'de çalışan arama işlemi"""
+        import os
+        import glob
+        from datetime import datetime
+        
+        search_term = params['search_term']
+        source_path = params['source_path']
+        include_subfolders = params['include_subfolders']
+        
+        print(f"DEBUG: Worker başladı - Alt klasörler: {include_subfolders}")
         
         # Arama terimini ayrıştır
         ordered_words, include_words, exclude_words, is_wildcard = self._parse_search_term(search_term)
         
-        if self.subfolders_var.get():
-            # Alt klasörlerle birlikte ara
-            if is_wildcard:
-                # Wildcard ile arama
-                search_pattern = os.path.join(self.source_path, '**', search_term)
-                files = glob.glob(search_pattern, recursive=True)
-                
-                # Toplam dosya sayısını say (tüm dosyaları say)
-                for root, dirs, filenames in os.walk(self.source_path):
-                    total_files += len(filenames)
-            else:
-                # Gelişmiş arama kriterleri ile ara
-                files = []
-                for root, dirs, filenames in os.walk(self.source_path):
-                    total_files += len(filenames)  # Tüm dosyaları say
-                    for filename in filenames:
-                        if self._matches_search_criteria(filename, ordered_words, include_words, exclude_words):
-                            files.append(os.path.join(root, filename))
-        else:
-            # Sadece kaynak klasörde ara
-            if is_wildcard:
-                # Wildcard ile arama
-                search_pattern = os.path.join(self.source_path, search_term)
-                files = glob.glob(search_pattern)
-                
-                # Toplam dosya sayısını say
-                if os.path.exists(self.source_path):
-                    total_files = sum(1 for f in os.listdir(self.source_path) 
-                                     if os.path.isfile(os.path.join(self.source_path, f)))
-            else:
-                # Gelişmiş arama kriterleri ile ara
-                files = []
-                if os.path.exists(self.source_path):
-                    for filename in os.listdir(self.source_path):
-                        filepath = os.path.join(self.source_path, filename)
+        results = []
+        
+        try:
+            if include_subfolders:
+                # Alt klasörlerle birlikte ara
+                if is_wildcard:
+                    # Wildcard ile arama
+                    search_pattern = os.path.join(source_path, '**', search_term)
+                    for filepath in glob.iglob(search_pattern, recursive=True):
+                        if self.search_cancelled:
+                            print("DEBUG: Arama iptal edildi (wildcard)")
+                            break
+                        self.processed_files += 1
                         if os.path.isfile(filepath):
-                            total_files += 1  # Tüm dosyaları say
+                            self._add_file_to_results(filepath, results)
+                else:
+                    # Gelişmiş arama kriterleri ile ara
+                    for root, dirs, filenames in os.walk(source_path):
+                        if self.search_cancelled:
+                            print("DEBUG: Arama iptal edildi (walk)")
+                            break
+                        for filename in filenames:
+                            if self.search_cancelled:
+                                break
+                            self.processed_files += 1
                             if self._matches_search_criteria(filename, ordered_words, include_words, exclude_words):
-                                files.append(filepath)
+                                filepath = os.path.join(root, filename)
+                                self._add_file_to_results(filepath, results)
+            else:
+                # Sadece kaynak klasörde ara
+                if is_wildcard:
+                    search_pattern = os.path.join(source_path, search_term)
+                    for filepath in glob.iglob(search_pattern):
+                        if self.search_cancelled:
+                            print("DEBUG: Arama iptal edildi")
+                            break
+                        self.processed_files += 1
+                        if os.path.isfile(filepath):
+                            self._add_file_to_results(filepath, results)
+                else:
+                    if os.path.exists(source_path):
+                        for filename in os.listdir(source_path):
+                            if self.search_cancelled:
+                                print("DEBUG: Arama iptal edildi")
+                                break
+                            filepath = os.path.join(source_path, filename)
+                            if os.path.isfile(filepath):
+                                self.processed_files += 1
+                                if self._matches_search_criteria(filename, ordered_words, include_words, exclude_words):
+                                    self._add_file_to_results(filepath, results)
+        except Exception as e:
+            print(f"DEBUG: Arama hatası: {e}")
         
-        # Sonuçları işle
-        for filepath in files:
-            if os.path.isfile(filepath):
-                filename = os.path.basename(filepath)
-                folder = os.path.dirname(filepath)
-                size = os.path.getsize(filepath)
-                size_str = self._format_size(size)
-                # Dosya değiştirilme tarihi
-                mtime = os.path.getmtime(filepath)
-                from datetime import datetime
-                date_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
-                
-                results.append((filename, folder, date_str, size_str, filepath, size, mtime))
-        
-        # Sonuçları sakla (sıralama için)
+        # Sonuçları sakla
         self.search_results = results
+        self.search_running = False
+        print(f"DEBUG: Arama tamamlandı - İşlenen: {self.processed_files}, Bulunan: {self.found_files}")
+    
+    def _add_file_to_results(self, filepath, results):
+        """Dosyayı sonuç listesine ekle"""
+        import os
+        from datetime import datetime
+        
+        try:
+            filename = os.path.basename(filepath)
+            folder = os.path.dirname(filepath)
+            size = os.path.getsize(filepath)
+            size_str = self._format_size(size)
+            mtime = os.path.getmtime(filepath)
+            date_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
+            
+            results.append((filename, folder, date_str, size_str, filepath, size, mtime))
+            self.found_files += 1
+        except (OSError, PermissionError) as e:
+            print(f"DEBUG: Dosya bilgisi alınamadı: {filepath} - {e}")
+    
+    def _finalize_search(self):
+        """Arama tamamlandığında sonuçları UI'ya ekle"""
+        # Timer'ı durdur
+        if self.update_timer_id:
+            self.after_cancel(self.update_timer_id)
+            self.update_timer_id = None
+        
+        results = self.search_results
         
         # Sonuçları treeview'e ekle (dosya adına göre sırala)
         results.sort(key=lambda x: x[0].lower())
         self.sort_state = {'column': 'Dosya Adı', 'reverse': False}
         
         for filename, folder, date_str, size_str, filepath, size, mtime in results:
-            # filepath, size ve mtime'ı tag olarak sakla
             self.results_tree.insert('', 'end', 
                                     values=(filename, folder, date_str, size_str),
                                     tags=(filepath, str(size), str(mtime)))
         
-        # Sonuç sayısını güncelle - toplam dosya sayısı ile birlikte
-        if total_files > 0:
+        # Sonuç sayısını güncelle
+        if self.processed_files > 0:
             self.result_label.configure(
-                text=f"Sonuç: {len(results)} dosya (toplam {total_files:,} dosyadan)"
+                text=f"Sonuç: {len(results)} dosya (toplam {self.processed_files:,} dosyadan)"
             )
         else:
             self.result_label.configure(text=f"Sonuç: {len(results)} dosya")
+        
+        # İptal durumunu göster
+        if self.search_cancelled:
+            self.status_label.configure(text="⚠ ARAMA KULLANICI TARAFINDAN İPTAL EDİLDİ")
+            self.progress_label.configure(text=f"İptal anında: {self.processed_files:,} dosya tarandı")
+            print(f"DEBUG: Arama iptal edildi - {len(results)} sonuç gösteriliyor")
+        else:
+            self.progress_label.configure(text=f"Arama tamamlandı - {self.processed_files:,} dosya tarandı")
+            print(f"DEBUG: Arama tamamlandı - {len(results)} sonuç")
     
     def _format_size(self, size: int) -> str:
         """Dosya boyutunu formatla"""
